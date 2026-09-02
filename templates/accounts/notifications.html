@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications — RailSaathi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">🔔 Your Notifications</h3>
+      <p class="text-muted small mb-0">Live updates regarding your bookings, assistance requests, and grievances</p>
+    </div>
+  </div>
+
+  <div class="rs-card p-4">
+    {% if notifications %}
+      <div class="list-group list-group-flush">
+        {% for notif in notifications %}
+          <div class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center">
+            <div class="d-flex gap-3 align-items-start">
+              <div class="p-2 rounded-circle bg-primary-subtle text-primary mt-1">
+                <i class="fas fa-bell"></i>
+              </div>
+              <div>
+                <h6 class="fw-bold mb-1">{{ notif.title }}</h6>
+                <p class="text-muted small mb-1">{{ notif.message }}</p>
+                <span class="text-muted" style="font-size: 11px;">{{ notif.created_at|date:"d M Y, h:i A" }}</span>
+              </div>
+            </div>
+            {% if notif.link_url %}
+              <a href="{{ notif.link_url }}" class="btn btn-sm btn-rs-outline">View Details</a>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-bell-slash fs-1 text-secondary mb-3"></i>
+        <h5>No Notifications Yet</h5>
+        <p class="small">We'll alert you here when your coolie accepts a booking or your assistance request status updates.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

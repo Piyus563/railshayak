@@ -1,0 +1,27 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from rest_framework import viewsets, permissions
+
+from .models import Notification
+from .serializers import NotificationSerializer
+
+
+@login_required
+def mark_notification_read(request, pk):
+    notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    notif.is_read = True
+    notif.save(update_fields=['is_read'])
+    if notif.link_url:
+        return redirect(notif.link_url)
+    return redirect('accounts:notifications')
+
+
+# --- REST API ViewSet ---
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)

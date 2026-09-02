@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Interactive Station Map — {{ station.name }} ({{ station.code }}) — RailSaathi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Header & Switcher -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+    <div>
+      <h2 class="fw-bold mb-1">🗺️ Interactive Station Map &bull; {{ station.name }}</h2>
+      <p class="text-muted small mb-0">Navigate platforms, washrooms, drinking water kiosks, elevators, and medical rooms in real-time.</p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <div class="dropdown">
+        <button class="btn btn-rs-outline dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="fas fa-train me-1"></i> Switch Station ({{ station.code }})
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-md border-0 rounded-4">
+          {% for stn in all_stations %}
+            <li><a class="dropdown-item {% if stn.code == station.code %}active{% endif %}" href="{% url 'stations:station_map' stn.code %}">{{ stn.name }} ({{ stn.code }})</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <a href="{% url 'bookings:book_coolie' %}?station={{ station.code }}" class="btn btn-rs-accent">
+        <i class="fas fa-luggage-cart me-1"></i> Book Coolie Here
+      </a>
+    </div>
+  </div>
+
+  <!-- Map Container with Facility Filter Sidebar -->
+  <div class="row g-4">
+    <div class="col-lg-9">
+      <div class="rs-card p-2 bg-white shadow-lg position-relative">
+        <div id="station-map"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Interactive Filter Legend -->
+    <div class="col-lg-3">
+      <div class="rs-card p-3 h-100">
+        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-layer-group me-1 text-primary"></i> Map Layer Filters</h6>
+
+        <div class="d-flex flex-column gap-2 small">
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="ALL" checked>
+            <span class="fw-bold">Show All Facilities</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="WASHROOM" checked>
+            <span>🚻 Washrooms & Toilets</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="DRINKING_WATER" checked>
+            <span>💧 RO Drinking Water</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="LIFT" checked>
+            <span>🛗 Lifts & Elevators</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="ESCALATOR" checked>
+            <span>🚶 Escalators</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="FOOD" checked>
+            <span>🍴 Food Court & Jan Aahaar</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="WAITING_ROOM" checked>
+            <span>🪑 AC & General Lounges</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="MEDICAL" checked>
+            <span>🏥 Medical Health Post</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="HELP_DESK" checked>
+            <span>ℹ️ Sahayata Help Desk</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="WHEELCHAIR_POINT" checked>
+            <span>♿ Wheelchair Pick-up Hub</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ facilities_data|json_script:"facilities-data" }}
+{{ platforms_data|json_script:"platforms-data" }}
+<script src="/static/js/station_map.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const facilitiesData = JSON.parse(document.getElementById('facilities-data').textContent || '[]');
+    const platformsData = JSON.parse(document.getElementById('platforms-data').textContent || '[]');
+    const stationLat = {{ station.latitude }};
+    const stationLng = {{ station.longitude }};
+    const stationName = "{{ station.name|escapejs }}";
+
+    initStationMap('station-map', stationLat, stationLng, stationName, facilitiesData, platformsData);
+  });
+</script>
+{% endblock %}
