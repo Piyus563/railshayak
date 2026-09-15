@@ -241,3 +241,29 @@ class RailSaathiCoreTests(TestCase):
         resp_charts = self.client.get('/portal/api/charts-data/')
         self.assertEqual(resp_charts.status_code, 200)
         self.assertIn('daily_bookings', resp_charts.json())
+
+        for endpoint in ('assistance', 'lost-found', 'complaints'):
+            response = self.client.post(f'/api/v1/{endpoint}/', {})
+            self.assertEqual(response.status_code, 403)
+
+    def test_10_invalid_booking_input_is_rejected(self):
+        """Test invalid numeric booking input does not create a server error."""
+        self.client.login(username="passenger_test", password="passpassword")
+        response = self.client.post(reverse('bookings:book_coolie'), {
+            'station_id': self.station.id,
+            'number_of_bags': 'not-a-number',
+            'approx_weight_kg': 20,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Booking.objects.filter(passenger=self.passenger_user).count(), 0)
+
+    def test_11_station_map_page_and_data(self):
+        """Test the station map page and its live data endpoint."""
+        page = self.client.get(reverse('stations:station_map_default'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, '/api/v1/stations/NJP/map_data/')
+        self.assertContains(page, 'facilities-data')
+
+        map_data = self.client.get('/api/v1/stations/NJP/map_data/')
+        self.assertEqual(map_data.status_code, 200)
+        self.assertEqual(len(map_data.json()['platforms']), 1)

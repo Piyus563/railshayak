@@ -78,7 +78,7 @@ def complaint_list_view(request):
 class ComplaintViewSet(viewsets.ModelViewSet):
     queryset = Complaint.objects.all()
     serializer_class = ComplaintSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()

@@ -44,8 +44,16 @@ def book_coolie_view(request):
         coach_number = request.POST.get('coach_number', '').strip()
         seat_number = request.POST.get('seat_number', '').strip()
         luggage_type = request.POST.get('luggage_type', 'TROLLEY')
-        number_of_bags = int(request.POST.get('number_of_bags', 1))
-        approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
+        try:
+            number_of_bags = int(request.POST.get('number_of_bags', 1))
+            approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
+        except (TypeError, ValueError):
+            messages.error(request, "Please enter valid numbers for bags and luggage weight.")
+            return redirect('bookings:book_coolie')
+
+        if number_of_bags < 1 or approx_weight_kg < 1:
+            messages.error(request, "Bags and luggage weight must be at least 1.")
+            return redirect('bookings:book_coolie')
         meeting_point = request.POST.get('meeting_point', '').strip()
         special_notes = request.POST.get('special_notes', '').strip()
 

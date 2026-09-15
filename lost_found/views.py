@@ -83,7 +83,7 @@ def lost_found_detail_view(request, report_id):
 class LostFoundViewSet(viewsets.ModelViewSet):
     queryset = LostFoundReport.objects.all()
     serializer_class = LostFoundReportSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()

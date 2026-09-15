@@ -49,11 +49,10 @@ def coolie_dashboard_view(request):
     """
     Dedicated Coolie / Sahayak Dashboard with instant status toggle and booking request management.
     """
-    if not (request.user.role == 'COOLIE' or hasattr(request.user, 'coolie_profile')):
+    coolie = getattr(request.user, 'coolie_profile', None)
+    if coolie is None:
         messages.error(request, "Access restricted to registered coolie partners.")
         return redirect('accounts:passenger_dashboard')
-
-    coolie = request.user.coolie_profile
 
     # Handle Online/Offline toggle
     if request.method == 'POST' and 'toggle_status' in request.POST:
@@ -103,11 +102,10 @@ def update_booking_status(request, booking_id, action):
     """
     Coolie action handler to Accept, Reject, Start Service, or Complete Service.
     """
-    if not (request.user.role == 'COOLIE' or hasattr(request.user, 'coolie_profile')):
+    coolie = getattr(request.user, 'coolie_profile', None)
+    if coolie is None:
         messages.error(request, "Unauthorized action.")
         return redirect('landing')
-
-    coolie = request.user.coolie_profile
     booking = get_object_or_404(Booking, booking_id=booking_id, coolie=coolie)
     now = timezone.now()
 

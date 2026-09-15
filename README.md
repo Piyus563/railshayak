@@ -61,7 +61,7 @@ RailShayak is a Django-based railway assistance and management platform designed
 
 3. Install dependencies
    ```bash
-   pip install django
+   pip install -r requirements.txt
    ```
 
 4. Run database migrations
@@ -78,6 +78,24 @@ RailShayak is a Django-based railway assistance and management platform designed
    ```text
    http://127.0.0.1:8000/
    ```
+
+## Deploy on Render
+
+This repository includes a `render.yaml` blueprint for a Django web service and a PostgreSQL database.
+
+1. Push the repository to GitHub.
+2. In Render, choose **New > Blueprint** and select the repository.
+3. Render will install dependencies, collect static files, run migrations, seed demo data, and start Gunicorn.
+4. The generated `DJANGO_SECRET_KEY` and `DATABASE_URL` are configured by the blueprint.
+
+For a manual Render web service, use:
+
+```text
+Build Command: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py seed_data
+Start Command: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+```
+
+Set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, and `DATABASE_URL` in the Render environment. Add the Render public URL to `CSRF_TRUSTED_ORIGINS` only when using a custom security configuration; the app automatically trusts its `RENDER_EXTERNAL_HOSTNAME`.
 
 ## Admin Setup
 

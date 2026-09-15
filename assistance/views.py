@@ -77,7 +77,7 @@ def assistance_list_view(request):
 class AssistanceRequestViewSet(viewsets.ModelViewSet):
     queryset = AssistanceRequest.objects.all()
     serializer_class = AssistanceRequestSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()

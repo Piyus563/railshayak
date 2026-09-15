@@ -3,15 +3,20 @@ Django settings for RailSaathi project.
 """
 
 import os
+import importlib.util
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security settings
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-railsaathi-secret-key-prod-grade-mvp-2026')
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-key')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = ['*']
+allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts if host.strip()]
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
 
 # Application definition
 INSTALLED_APPS = [
@@ -52,6 +57,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+WHITE_NOISE_AVAILABLE = importlib.util.find_spec('whitenoise') is not None
+if WHITE_NOISE_AVAILABLE:
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -73,10 +82,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database configuration: supports PostgreSQL or SQLite fallback
+# Database configuration: Render provides DATABASE_URL; SQLite remains the local fallback.
+DATABASE_URL = os.environ.get('DATABASE_URL')
 DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
 
-if DB_ENGINE == 'postgres' or os.environ.get('POSTGRES_DB'):
+if DATABASE_URL:
+    import dj_database_url
+
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
+    }
+elif DB_ENGINE == 'postgres' or os.environ.get('POSTGRES_DB'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -116,6 +136,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if WHITE_NOISE_AVAILABLE
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 
 # Media files
 MEDIA_URL = '/media/'
@@ -141,8 +173,28 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-# CORS
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS and deployment security
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if DEBUG and not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if render_hostname:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{render_hostname}')
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() in ('true', '1', 't')
 
 # Auth Redirects
 LOGIN_URL = 'accounts:login'

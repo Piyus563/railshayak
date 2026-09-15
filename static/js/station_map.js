@@ -2,13 +2,35 @@
  * RailSaathi Interactive Leaflet.js Station Map
  */
 
-function initStationMap(mapElementId, stationLat, stationLng, stationName, facilitiesData, platformsData) {
+function initStationMap(mapElementId, stationLat, stationLng, stationName, facilitiesData, platformsData, options) {
   const mapElem = document.getElementById(mapElementId);
   if (!mapElem) return;
 
+  options = options || {};
+  const statusElement = document.getElementById(options.statusElementId || 'map-status');
+  const setStatus = function(message, type) {
+    if (!statusElement) return;
+    statusElement.textContent = message;
+    statusElement.className = `small text-${type || 'muted'}`;
+  };
+
+  if (typeof L === 'undefined') {
+    mapElem.innerHTML = '<div class="alert alert-danger m-3">The map library could not be loaded. Please check your internet connection and reload.</div>';
+    setStatus('Map library unavailable.', 'danger');
+    return;
+  }
+
+  const initialLat = parseFloat(stationLat);
+  const initialLng = parseFloat(stationLng);
+  if (!Number.isFinite(initialLat) || !Number.isFinite(initialLng)) {
+    mapElem.innerHTML = '<div class="alert alert-danger m-3">Station location is not available.</div>';
+    setStatus('Station coordinates unavailable.', 'danger');
+    return;
+  }
+
   // Initialize map centered at station coordinates
   const map = L.map(mapElementId, {
-    center: [stationLat, stationLng],
+    center: [initialLat, initialLng],
     zoom: 18,
     zoomControl: true,
     scrollWheelZoom: false
@@ -59,7 +81,15 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
   };
 
   const markersGroup = L.layerGroup().addTo(map);
-  const allMarkers = [];
+  let allMarkers = [];
+  let userMarker = null;
+  let userAccuracy = null;
+
+  const escapeHtml = function(value) {
+    return String(value == null ? '' : value).replace(/[&<>'"]/g, function(character) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[character];
+    });
+  };
 
   // Add Station Central Marker
   const mainStationIcon = L.divIcon({
@@ -82,17 +112,37 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
     popupAnchor: [0, -25]
   });
 
-  const mainMarker = L.marker([stationLat, stationLng], { icon: mainStationIcon }).addTo(map);
+  const mainMarker = L.marker([initialLat, initialLng], { icon: mainStationIcon }).addTo(map);
   mainMarker.bindPopup(`
     <div style="padding: 6px; min-width: 180px;">
-      <h6 style="margin: 0 0 4px 0; color: #0f2b48; font-weight: 700;">🚆 ${stationName}</h6>
+      <h6 style="margin: 0 0 4px 0; color: #0f2b48; font-weight: 700;">🚆 ${escapeHtml(stationName)}</h6>
       <p style="margin: 0; font-size: 12px; color: #64748b;">Central Concourse & Porch</p>
     </div>
   `);
 
-  // Render Facilities Markers
-  if (Array.isArray(facilitiesData)) {
-    facilitiesData.forEach(function(facility) {
+  function createPlatformIcon() {
+    return L.divIcon({
+      className: 'platform-leaflet-marker',
+      html: '<div style="width:32px;height:32px;background:#f59e0b;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.25)"><i class="fas fa-subway"></i></div>',
+      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -16]
+    });
+  }
+
+  function renderLayers(nextFacilities, nextPlatforms) {
+    markersGroup.clearLayers();
+    allMarkers = [];
+
+    (Array.isArray(nextPlatforms) ? nextPlatforms : []).forEach(function(platform) {
+      const lat = parseFloat(platform.latitude);
+      const lng = parseFloat(platform.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const marker = L.marker([lat, lng], {icon: createPlatformIcon()});
+      marker.facilityType = 'PLATFORM';
+      marker.bindPopup(`<strong>Platform ${escapeHtml(platform.number)}</strong><br>${escapeHtml(platform.description || 'Platform information')}`);
+      marker.addTo(markersGroup);
+    });
+
+    (Array.isArray(nextFacilities) ? nextFacilities : []).forEach(function(facility) {
       const type = facility.facility_type;
       const conf = iconConfig[type] || { icon: 'fas fa-map-marker-alt', bg: 'linear-gradient(135deg, #2563eb, #1d4ed8)' };
       const icon = createCustomIcon(conf.icon, conf.bg);
@@ -100,18 +150,18 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
       const lat = parseFloat(facility.latitude);
       const lng = parseFloat(facility.longitude);
 
-      if (!isNaN(lat) && !isNaN(lng)) {
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
         const marker = L.marker([lat, lng], { icon: icon });
         const popupContent = `
           <div style="padding: 8px; min-width: 200px;">
             <div style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">
-              ${facility.facility_type_display || type}
+              ${escapeHtml(facility.facility_type_display || type)}
             </div>
-            <h6 style="margin: 0 0 6px 0; font-weight: 700; color: #0f2b48;">${facility.name}</h6>
-            <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">${facility.location_description || ''}</p>
+            <h6 style="margin: 0 0 6px 0; font-weight: 700; color: #0f2b48;">${escapeHtml(facility.name)}</h6>
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">${escapeHtml(facility.location_description)}</p>
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
-              <span style="font-size: 11px; color: #10b981; font-weight: 600;"><i class="fas fa-check-circle me-1"></i>Operational</span>
-              ${facility.contact_number ? `<a href="tel:${facility.contact_number}" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px;">Call ${facility.contact_number}</a>` : ''}
+              <span style="font-size: 11px; color: ${facility.is_operational === false ? '#dc2626' : '#10b981'}; font-weight: 600;"><i class="fas ${facility.is_operational === false ? 'fa-times-circle' : 'fa-check-circle'} me-1"></i>${facility.is_operational === false ? 'Maintenance' : 'Operational'}</span>
+              ${facility.contact_number ? `<a href="tel:${escapeHtml(facility.contact_number)}" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px;">Call ${escapeHtml(facility.contact_number)}</a>` : ''}
             </div>
           </div>
         `;
@@ -121,21 +171,66 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
         allMarkers.push(marker);
       }
     });
+    applyFilters();
   }
+
+  function applyFilters() {
+    const checkedTypes = Array.from(document.querySelectorAll('.facility-filter-checkbox:checked')).map(c => c.value);
+    const showAll = checkedTypes.includes('ALL');
+    allMarkers.forEach(function(marker) {
+      if (showAll || checkedTypes.includes(marker.facilityType)) markersGroup.addLayer(marker);
+      else markersGroup.removeLayer(marker);
+    });
+  }
+
+  renderLayers(facilitiesData, platformsData);
 
   // Filter Event Listeners
   const filterCheckboxes = document.querySelectorAll('.facility-filter-checkbox');
   filterCheckboxes.forEach(function(cb) {
     cb.addEventListener('change', function() {
-      const checkedTypes = Array.from(document.querySelectorAll('.facility-filter-checkbox:checked')).map(c => c.value);
-      markersGroup.clearLayers();
-      allMarkers.forEach(function(marker) {
-        if (checkedTypes.length === 0 || checkedTypes.includes(marker.facilityType) || checkedTypes.includes('ALL')) {
-          markersGroup.addLayer(marker);
-        }
-      });
+      if (cb.value === 'ALL' && cb.checked) {
+        document.querySelectorAll('.facility-filter-checkbox').forEach(c => c.checked = true);
+      } else if (cb.value !== 'ALL' && !cb.checked) {
+        const allCheckbox = document.querySelector('.facility-filter-checkbox[value="ALL"]');
+        if (allCheckbox) allCheckbox.checked = false;
+      }
+      applyFilters();
     });
   });
+
+  const locateButton = document.getElementById(options.locateButtonId || 'locate-me');
+  if (locateButton && navigator.geolocation) {
+    locateButton.addEventListener('click', function() {
+      setStatus('Finding your location...', 'primary');
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const latLng = [position.coords.latitude, position.coords.longitude];
+        if (userMarker) map.removeLayer(userMarker);
+        if (userAccuracy) map.removeLayer(userAccuracy);
+        userMarker = L.circleMarker(latLng, {radius: 8, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1}).addTo(map).bindPopup('Your current location').openPopup();
+        userAccuracy = L.circle(latLng, {radius: position.coords.accuracy, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.1, weight: 1}).addTo(map);
+        map.setView(latLng, 18);
+        setStatus('Your location is shown on the map.', 'success');
+      }, function() {
+        setStatus('Location permission was unavailable.', 'danger');
+      }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 30000});
+    });
+  }
+
+  const refresh = function() {
+    if (!options.dataUrl) return;
+    fetch(options.dataUrl, {headers: {'Accept': 'application/json'}})
+      .then(function(response) { if (!response.ok) throw new Error('Map data unavailable'); return response.json(); })
+      .then(function(data) {
+        renderLayers(data.facilities || [], data.platforms || []);
+        setStatus(`Live data updated at ${new Date().toLocaleTimeString()}.`, 'success');
+      })
+      .catch(function() { setStatus('Showing last available map data.', 'warning'); });
+  };
+  refresh();
+  if (options.dataUrl) window.setInterval(refresh, 30000);
+
+  window.setTimeout(function() { map.invalidateSize(); }, 100);
 
   return map;
 }
