@@ -12,11 +12,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts if host.strip()]
 if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
+ALLOWED_HOSTS += ['*'] if DEBUG else []
 
 # Application definition
 INSTALLED_APPS = [
@@ -189,6 +190,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 if render_hostname:
     CSRF_TRUSTED_ORIGINS.append(f'https://{render_hostname}')
+    CSRF_TRUSTED_ORIGINS.append(f'https://*.onrender.com')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = not DEBUG
