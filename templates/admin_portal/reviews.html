@@ -1,0 +1,47 @@
+{% extends 'admin_portal/base_admin.html' %}
+
+{% block admin_content %}
+<div class="mb-4">
+  <h3 class="fw-bold mb-1">Ratings & Reviews</h3>
+  <p class="text-muted small">All coolie reviews submitted by passengers</p>
+</div>
+
+<div class="rs-card p-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th>Booking ID</th>
+          <th>Passenger</th>
+          <th>Coolie</th>
+          <th>Rating</th>
+          <th>Punctuality</th>
+          <th>Behavior</th>
+          <th>Comment</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reviews %}
+          <tr>
+            <td><span class="badge bg-secondary">{{ r.booking.booking_id }}</span></td>
+            <td>{{ r.passenger.get_full_name|default:r.passenger.username }}</td>
+            <td>{{ r.coolie.user.get_full_name }} <span class="text-muted">({{ r.coolie.badge_number }})</span></td>
+            <td>
+              {% for i in "12345" %}
+                <i class="fas fa-star {% if forloop.counter <= r.rating %}text-warning{% else %}text-muted{% endif %}" style="font-size:11px;"></i>
+              {% endfor %}
+            </td>
+            <td>{{ r.punctuality_rating }}/5</td>
+            <td>{{ r.behavior_rating }}/5</td>
+            <td>{{ r.comment|default:"-"|truncatechars:60 }}</td>
+            <td>{{ r.created_at|date:"d M Y" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No reviews yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
