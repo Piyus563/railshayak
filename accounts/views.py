@@ -3,6 +3,10 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+<<<<<<< HEAD
+=======
+from django.views.decorators.http import require_POST
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,6 +20,10 @@ from assistance.models import AssistanceRequest
 from lost_found.models import LostFoundReport
 from complaints.models import Complaint
 from notifications.models import Notification
+<<<<<<< HEAD
+=======
+from .ai import assistant_reply, recommend_coolies
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 
 # --- HTML Template Views ---
@@ -184,6 +192,7 @@ def passenger_dashboard(request):
 @login_required
 def notifications_view(request):
     """
+<<<<<<< HEAD
     Notifications list page and mark as read.
     """
     notifications = Notification.objects.filter(recipient=request.user)
@@ -191,6 +200,46 @@ def notifications_view(request):
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
 
     return render(request, 'accounts/notifications.html', {'notifications': notifications})
+=======
+    Notifications list page. Mark all as read via POST only.
+    """
+    if request.method == 'POST' and request.POST.get('mark_all_read'):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        messages.success(request, "All notifications marked as read.")
+        return redirect('accounts:notifications')
+
+    notifications = Notification.objects.filter(recipient=request.user)
+    unread_count = notifications.filter(is_read=False).count()
+    return render(request, 'accounts/notifications.html', {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    })
+
+
+@login_required
+@require_POST
+def assistant_chat_api(request):
+    """Small, local station-help assistant with no external API dependency."""
+    message = request.POST.get('message', '').strip()
+    if not message:
+        return JsonResponse({'error': 'Message is required.'}, status=400)
+    return JsonResponse({'reply': assistant_reply(message)})
+
+
+@login_required
+def coolie_recommendations_api(request):
+    """Rank live NJP coolies for the booking wizard and mobile clients."""
+    station_code = request.GET.get('station', 'NJP')
+    try:
+        number_of_bags = max(1, int(request.GET.get('bags', 1)))
+    except (TypeError, ValueError):
+        number_of_bags = 1
+    needs_assistance = request.GET.get('assistance', '').lower() in ('1', 'true', 'yes')
+    return JsonResponse({
+        'station': station_code.upper(),
+        'recommendations': recommend_coolies(station_code, number_of_bags, needs_assistance),
+    })
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 
 # --- REST API ViewSets ---

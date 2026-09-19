@@ -3,6 +3,7 @@ Django settings for RailSaathi project.
 """
 
 import os
+<<<<<<< HEAD
 import importlib.util
 from pathlib import Path
 
@@ -18,6 +19,40 @@ ALLOWED_HOSTS = [host.strip() for host in allowed_hosts if host.strip()]
 if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
 ALLOWED_HOSTS += ['*'] if DEBUG else []
+=======
+from pathlib import Path
+
+import dj_database_url
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env file if present
+_env_path = BASE_DIR / '.env'
+if _env_path.exists():
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _key, _val = _line.split('=', 1)
+                os.environ.setdefault(_key.strip(), _val.strip())
+
+# Security settings
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-railsaathi-secret-key-prod-grade-mvp-2026')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't', 'yes', 'y')
+
+allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = ['*'] if not allowed_hosts else [host.strip() for host in allowed_hosts.split(',') if host.strip()]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+else:
+    SECURE_SSL_REDIRECT = False
+
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 # Application definition
 INSTALLED_APPS = [
@@ -49,6 +84,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+<<<<<<< HEAD
+=======
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -58,10 +97,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+<<<<<<< HEAD
 WHITE_NOISE_AVAILABLE = importlib.util.find_spec('whitenoise') is not None
 if WHITE_NOISE_AVAILABLE:
     MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -83,6 +125,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+<<<<<<< HEAD
 # Database configuration: Render provides DATABASE_URL; SQLite remains the local fallback.
 DATABASE_URL = os.environ.get('DATABASE_URL')
 DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
@@ -98,6 +141,14 @@ if DATABASE_URL:
         )
     }
 elif DB_ENGINE == 'postgres' or os.environ.get('POSTGRES_DB'):
+=======
+# Database configuration: supports PostgreSQL or SQLite fallback
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+elif os.environ.get('DB_ENGINE') == 'postgres' or os.environ.get('POSTGRES_DB'):
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -142,11 +193,15 @@ STORAGES = {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
+<<<<<<< HEAD
         'BACKEND': (
             'whitenoise.storage.CompressedManifestStaticFilesStorage'
             if WHITE_NOISE_AVAILABLE
             else 'django.contrib.staticfiles.storage.StaticFilesStorage'
         ),
+=======
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     },
 }
 
@@ -174,6 +229,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
+<<<<<<< HEAD
 # CORS and deployment security
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
@@ -197,8 +253,25 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() in ('true', '1', 't')
+=======
+# CORS
+CORS_ALLOW_ALL_ORIGINS = True
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 # Auth Redirects
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard_redirect'
 LOGOUT_REDIRECT_URL = 'landing'
+<<<<<<< HEAD
+=======
+
+# Twilio WhatsApp
+TWILIO_WHATSAPP_ENABLED = os.environ.get('TWILIO_WHATSAPP_ENABLED', 'False').lower() in ('true', '1', 't', 'yes', 'y')
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+
+# Razorpay
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

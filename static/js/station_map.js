@@ -2,6 +2,7 @@
  * RailSaathi Interactive Leaflet.js Station Map
  */
 
+<<<<<<< HEAD
 function initStationMap(mapElementId, stationLat, stationLng, stationName, facilitiesData, platformsData, options) {
   const mapElem = document.getElementById(mapElementId);
   if (!mapElem) return;
@@ -40,11 +41,32 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | RailSaathi Smart Station Map',
     maxZoom: 20
+=======
+function initStationMap(mapElementId, stationLat, stationLng, stationName, facilitiesData, platformsData) {
+  const mapElem = document.getElementById(mapElementId);
+  if (!mapElem) return;
+
+  // Initialize map
+  const map = L.map(mapElementId, {
+    center: [stationLat, stationLng],
+    zoom: 17,
+    zoomControl: true,
+    scrollWheelZoom: true
+  });
+
+  // OpenStreetMap tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | RailSaathi',
+    maxZoom: 20,
+    tileSize: 256,
+    zoomOffset: 0
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   }).addTo(map);
 
   // Custom Icon Factory
   function createCustomIcon(iconClass, bgGradient) {
     return L.divIcon({
+<<<<<<< HEAD
       className: 'custom-leaflet-marker',
       html: `<div style="
         width: 38px;
@@ -166,11 +188,118 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
           </div>
         `;
         marker.bindPopup(popupContent);
+=======
+      className: '',
+      html: `<div style="
+        width:38px;height:38px;background:${bgGradient};
+        border-radius:50%;display:flex;align-items:center;
+        justify-content:center;color:#fff;font-size:15px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.35);border:2px solid #fff;
+      "><i class="${iconClass}"></i></div>`,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+      popupAnchor: [0, -22]
+    });
+  }
+
+  const iconConfig = {
+    'WASHROOM':        { icon: 'fas fa-restroom',     bg: 'linear-gradient(135deg,#0284c7,#0369a1)' },
+    'DRINKING_WATER':  { icon: 'fas fa-tint',          bg: 'linear-gradient(135deg,#06b6d4,#0891b2)' },
+    'LIFT':            { icon: 'fas fa-elevator',      bg: 'linear-gradient(135deg,#8b5cf6,#6d28d9)' },
+    'ESCALATOR':       { icon: 'fas fa-walking',       bg: 'linear-gradient(135deg,#6366f1,#4f46e5)' },
+    'FOOD':            { icon: 'fas fa-utensils',      bg: 'linear-gradient(135deg,#f59e0b,#d97706)' },
+    'WAITING_ROOM':    { icon: 'fas fa-couch',         bg: 'linear-gradient(135deg,#10b981,#059669)' },
+    'PARKING':         { icon: 'fas fa-car',           bg: 'linear-gradient(135deg,#64748b,#475569)' },
+    'MEDICAL':         { icon: 'fas fa-hospital',      bg: 'linear-gradient(135deg,#ef4444,#dc2626)' },
+    'HELP_DESK':       { icon: 'fas fa-info-circle',   bg: 'linear-gradient(135deg,#0f2b48,#1e40af)' },
+    'CLOAK_ROOM':      { icon: 'fas fa-luggage-cart',  bg: 'linear-gradient(135deg,#d946ef,#a21caf)' },
+    'WHEELCHAIR_POINT':{ icon: 'fas fa-wheelchair',    bg: 'linear-gradient(135deg,#2563eb,#1d4ed8)' },
+  };
+
+  // Station central marker
+  const mainIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+      width:48px;height:48px;
+      background:linear-gradient(135deg,#0f2b48,#2563eb);
+      border-radius:12px;display:flex;align-items:center;
+      justify-content:center;color:#fff;font-size:22px;
+      box-shadow:0 6px 18px rgba(15,43,72,0.45);border:3px solid #fff;
+    "><i class="fas fa-train"></i></div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
+    popupAnchor: [0, -28]
+  });
+
+  L.marker([stationLat, stationLng], { icon: mainIcon })
+    .addTo(map)
+    .bindPopup(`<div style="padding:6px;min-width:180px;">
+      <h6 style="margin:0 0 4px;color:#0f2b48;font-weight:700;">🚆 ${stationName}</h6>
+      <p style="margin:0;font-size:12px;color:#64748b;">Central Concourse & Porch</p>
+    </div>`);
+
+  // Platform markers
+  if (Array.isArray(platformsData)) {
+    platformsData.forEach(function(p) {
+      const lat = parseFloat(p.latitude);
+      const lng = parseFloat(p.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const platIcon = L.divIcon({
+          className: '',
+          html: `<div style="
+            width:34px;height:34px;
+            background:linear-gradient(135deg,#0ea5e9,#0284c7);
+            border-radius:8px;display:flex;align-items:center;
+            justify-content:center;color:#fff;font-weight:800;font-size:13px;
+            box-shadow:0 3px 10px rgba(0,0,0,0.25);border:2px solid #fff;
+          ">P${p.number}</div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+          popupAnchor: [0, -20]
+        });
+        L.marker([lat, lng], { icon: platIcon })
+          .addTo(map)
+          .bindPopup(`<div style="padding:6px;min-width:160px;">
+            <h6 style="margin:0 0 4px;color:#0f2b48;font-weight:700;">Platform ${p.number}</h6>
+            <p style="margin:0;font-size:12px;color:#64748b;">${p.description || ''}</p>
+          </div>`);
+      }
+    });
+  }
+
+  // Facility markers
+  const markersGroup = L.layerGroup().addTo(map);
+  const allMarkers = [];
+
+  if (Array.isArray(facilitiesData)) {
+    facilitiesData.forEach(function(facility) {
+      const type = facility.facility_type;
+      const conf = iconConfig[type] || { icon: 'fas fa-map-marker-alt', bg: 'linear-gradient(135deg,#2563eb,#1d4ed8)' };
+      const lat = parseFloat(facility.latitude);
+      const lng = parseFloat(facility.longitude);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.marker([lat, lng], { icon: createCustomIcon(conf.icon, conf.bg) });
+        marker.bindPopup(`
+          <div style="padding:8px;min-width:200px;">
+            <div style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;margin-bottom:2px;">
+              ${facility.facility_type_display || type}
+            </div>
+            <h6 style="margin:0 0 6px;font-weight:700;color:#0f2b48;">${facility.name}</h6>
+            <p style="margin:0 0 6px;font-size:13px;color:#475569;">${facility.location_description || ''}</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:6px;">
+              <span style="font-size:11px;color:#10b981;font-weight:600;"><i class="fas fa-check-circle"></i> Operational</span>
+              ${facility.contact_number ? `<a href="tel:${facility.contact_number}" style="font-size:11px;color:#2563eb;font-weight:600;">📞 ${facility.contact_number}</a>` : ''}
+            </div>
+          </div>
+        `);
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         marker.facilityType = type;
         markersGroup.addLayer(marker);
         allMarkers.push(marker);
       }
     });
+<<<<<<< HEAD
     applyFilters();
   }
 
@@ -194,11 +323,46 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
       } else if (cb.value !== 'ALL' && !cb.checked) {
         const allCheckbox = document.querySelector('.facility-filter-checkbox[value="ALL"]');
         if (allCheckbox) allCheckbox.checked = false;
+=======
+  }
+
+  // Filter logic — fixed: ALL checkbox controls all, individual checkboxes work independently
+  const filterCheckboxes = document.querySelectorAll('.facility-filter-checkbox');
+  const allCheckbox = document.querySelector('.facility-filter-checkbox[value="ALL"]');
+
+  function applyFilters() {
+    const checkedTypes = Array.from(
+      document.querySelectorAll('.facility-filter-checkbox:not([value="ALL"]):checked')
+    ).map(c => c.value);
+
+    const showAll = allCheckbox && allCheckbox.checked;
+    markersGroup.clearLayers();
+    allMarkers.forEach(function(marker) {
+      if (showAll || checkedTypes.includes(marker.facilityType)) {
+        markersGroup.addLayer(marker);
+      }
+    });
+  }
+
+  filterCheckboxes.forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      if (cb.value === 'ALL') {
+        // Sync all individual checkboxes to match ALL state
+        document.querySelectorAll('.facility-filter-checkbox:not([value="ALL"])').forEach(function(c) {
+          c.checked = cb.checked;
+        });
+      } else {
+        // If any individual unchecked, uncheck ALL
+        const allIndividual = document.querySelectorAll('.facility-filter-checkbox:not([value="ALL"])');
+        const allChecked = Array.from(allIndividual).every(c => c.checked);
+        if (allCheckbox) allCheckbox.checked = allChecked;
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
       }
       applyFilters();
     });
   });
 
+<<<<<<< HEAD
   const locateButton = document.getElementById(options.locateButtonId || 'locate-me');
   if (locateButton && navigator.geolocation) {
     locateButton.addEventListener('click', function() {
@@ -232,5 +396,7 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
 
   window.setTimeout(function() { map.invalidateSize(); }, 100);
 
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   return map;
 }

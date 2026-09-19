@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿__pycache__/
 *.py[cod]
 *.sqlite3
@@ -16,3 +17,13 @@ staticfiles/
 Thumbs.db
 .idea/
 .vscode/
+=======
+.env
+db.sqlite3
+__pycache__/
+*.py[cod]
+.venv/
+staticfiles/
+media/
+*.sqlite3-journal
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

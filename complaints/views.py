@@ -78,7 +78,11 @@ def complaint_list_view(request):
 class ComplaintViewSet(viewsets.ModelViewSet):
     queryset = Complaint.objects.all()
     serializer_class = ComplaintSerializer
+<<<<<<< HEAD
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+=======
+    permission_classes = [permissions.AllowAny]
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     def get_queryset(self):
         qs = super().get_queryset()

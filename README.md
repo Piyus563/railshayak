@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # RailShayak
 
 RailShayak is a Django-based railway assistance and management platform designed to support passengers, station staff, coolies, and administrators. The project includes booking management, complaints, lost and found tracking, notifications, station information, account management, and admin analytics.
@@ -118,3 +119,71 @@ This repository is intended as a railway service management app and may be expan
 ## License
 
 This project is for educational and project demonstration purposes unless a separate license is added by the repository owner.
+=======
+# RailSaathi
+
+RailSaathi is a Django + Django REST Framework platform for railway station assistance: verified coolie booking, live booking status, station maps and facilities, passenger assistance, lost and found, complaints, role-based dashboards, analytics, and a local AI station assistant.
+
+## Quick start
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver
+```
+
+Open http://127.0.0.1:8000/. The seed command is idempotent and creates NJP demo data, a small HWH directory entry, platforms, facilities, bookings, reviews, and notifications.
+
+SQLite is the default for local development. To use PostgreSQL, set `DB_ENGINE=postgres` and the `POSTGRES_*` values from `.env.example` before running migrations.
+
+## Razorpay TEST MODE payments
+
+Payments use Razorpay Checkout with UPI, QR, cards, and net banking enabled by the gateway. The server creates the order and verifies the Razorpay signature, order, amount, and captured status before a paid booking is sent to the coolie queue. Card numbers, UPI PINs, and other payment credentials are never stored by this application.
+
+1. Create a Razorpay account and switch the Dashboard to **Test Mode**.
+2. Copy the Test Key ID and Test Key Secret from **Account & Settings > API Keys**.
+3. Copy `.env.example` to `.env` and set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Never commit `.env`.
+4. Install dependencies and apply the existing database migrations:
+
+```powershell
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+5. Log in as a passenger, create a coolie booking, select the service date/time, and click **Pay Now**. In Razorpay Test Mode select UPI and use the test payment details shown in the Razorpay Checkout test documentation. A QR option is displayed when enabled for the account.
+
+To test failures, close the checkout or use Razorpay's failed-payment test option. The booking remains unpaid and can be retried. Refreshing a success URL does not create a second payment, and invalid order IDs, signatures, amounts, or uncaptured payments are rejected.
+
+## Demo accounts
+
+- Passenger: `priya_singh` / `pass123`
+- Coolie: `ramesh_kumar` / `coolie123`
+- Admin: `admin` / `admin123`
+
+Change these credentials before using the application outside a demo environment.
+
+## Main routes
+
+- `/` passenger landing page
+- `/accounts/dashboard/` role-aware dashboard redirect
+- `/bookings/book/` coolie booking wizard
+- `/stations/map/NJP/` Leaflet station map
+- `/portal/` admin analytics portal
+- `/api/v1/` REST API root
+- `/accounts/assistant/chat/` authenticated station-help chatbot POST endpoint
+- `/accounts/assistant/recommendations/?station=NJP&bags=3&assistance=true` live coolie recommendations
+
+## Development checks
+
+```powershell
+python manage.py check
+python manage.py test
+```
+
+The recommendation engine is intentionally explainable and local: it ranks verified online coolies by rating, experience, current platform, luggage fit, and accessibility. The `scikit-learn` dependency is included for extending this baseline with trained station-demand models without requiring an external AI provider for the demo.
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

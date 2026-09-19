@@ -65,4 +65,71 @@ document.addEventListener('DOMContentLoaded', function() {
       bsAlert.close();
     }, 6000);
   });
+<<<<<<< HEAD
+=======
+
+  const assistantToggle = document.querySelector('.rs-assistant-toggle');
+  const assistantPanel = document.querySelector('.rs-assistant-panel');
+  const assistantClose = document.querySelector('.rs-assistant-close');
+  const assistantForm = document.querySelector('.rs-assistant-form');
+  const assistantMessages = document.querySelector('.rs-assistant-messages');
+
+  function setAssistantOpen(isOpen) {
+    if (!assistantPanel || !assistantToggle) return;
+    assistantPanel.hidden = !isOpen;
+    assistantToggle.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  assistantToggle?.addEventListener('click', () => setAssistantOpen(assistantPanel.hidden));
+  assistantClose?.addEventListener('click', () => setAssistantOpen(false));
+  assistantForm?.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const input = assistantForm.querySelector('input[name="message"]');
+    const message = input.value.trim();
+    if (!message) return;
+    assistantMessages.insertAdjacentHTML('beforeend', `<p class="assistant-bubble assistant-bubble-user"></p>`);
+    assistantMessages.lastElementChild.textContent = message;
+    input.value = '';
+    const response = await fetch(assistantForm.action, {
+      method: 'POST',
+      headers: {'X-CSRFToken': assistantForm.querySelector('[name="csrfmiddlewaretoken"]').value},
+      body: new URLSearchParams({message}),
+    });
+    const data = await response.json();
+    const bubble = document.createElement('p');
+    bubble.className = 'assistant-bubble assistant-bubble-bot';
+    bubble.textContent = data.reply || data.error || 'Please try again.';
+    assistantMessages.appendChild(bubble);
+    assistantMessages.scrollTop = assistantMessages.scrollHeight;
+  });
+
+  // Live notification badge polling every 30 seconds
+  const notifBadge = document.querySelector('.navbar .badge.bg-danger');
+  const notifBell = document.querySelector('a[href*="notifications"] .badge');
+
+  function pollNotifications() {
+    fetch('/notifications/unread-count/')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const count = data.unread_count;
+        // Update all notification badges in navbar
+        document.querySelectorAll('.notif-badge').forEach(function(badge) {
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = '';
+          } else {
+            badge.style.display = 'none';
+          }
+        });
+      })
+      .catch(() => {});
+  }
+
+  // Only poll if user is logged in (bell icon exists)
+  if (document.querySelector('.notif-badge')) {
+    pollNotifications();
+    setInterval(pollNotifications, 30000);
+  }
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 });

@@ -77,7 +77,11 @@ def assistance_list_view(request):
 class AssistanceRequestViewSet(viewsets.ModelViewSet):
     queryset = AssistanceRequest.objects.all()
     serializer_class = AssistanceRequestSerializer
+<<<<<<< HEAD
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+=======
+    permission_classes = [permissions.AllowAny]
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     def get_queryset(self):
         qs = super().get_queryset()

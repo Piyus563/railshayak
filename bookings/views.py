@@ -1,31 +1,71 @@
+<<<<<<< HEAD
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from decimal import Decimal
+=======
+import razorpay
+from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
+
+from django.db import transaction
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.conf import settings
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from .models import Booking
 from .serializers import BookingSerializer
+<<<<<<< HEAD
+=======
+from .whatsapp import (
+    notify_booking_created, notify_booking_accepted,
+    notify_booking_started, notify_booking_completed,
+    notify_booking_cancelled, notify_booking_rejected
+)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from accounts.models import CoolieProfile, User
 from stations.models import Station, Platform
 from reviews.models import Review
 from notifications.models import Notification
 
 
+<<<<<<< HEAD
+=======
+def _razorpay_client():
+    return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+
+def _amount_in_paise(amount):
+    return int(Decimal(amount).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) * 100)
+
+
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 # --- HTML Views ---
 
 @login_required
 def book_coolie_view(request):
+<<<<<<< HEAD
     """
     Primary MVP Booking Wizard: Station -> Platform -> Luggage -> Coolie Selection -> Live Fare -> Confirmation.
     """
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     stations = Station.objects.filter(is_active=True)
     selected_station_code = request.GET.get('station', 'NJP')
     station = Station.objects.filter(code__iexact=selected_station_code).first() or stations.first()
     platforms = station.platforms.all() if station else []
+<<<<<<< HEAD
 
     # Get available online verified coolies for this station
     available_coolies = CoolieProfile.objects.filter(
@@ -33,6 +73,9 @@ def book_coolie_view(request):
         is_verified=True,
         is_online=True
     )
+=======
+    available_coolies = CoolieProfile.objects.filter(station=station, is_verified=True, is_online=True)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     if request.method == 'POST':
         station_id = request.POST.get('station_id')
@@ -44,6 +87,7 @@ def book_coolie_view(request):
         coach_number = request.POST.get('coach_number', '').strip()
         seat_number = request.POST.get('seat_number', '').strip()
         luggage_type = request.POST.get('luggage_type', 'TROLLEY')
+<<<<<<< HEAD
         try:
             number_of_bags = int(request.POST.get('number_of_bags', 1))
             approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
@@ -56,6 +100,25 @@ def book_coolie_view(request):
             return redirect('bookings:book_coolie')
         meeting_point = request.POST.get('meeting_point', '').strip()
         special_notes = request.POST.get('special_notes', '').strip()
+=======
+        number_of_bags = int(request.POST.get('number_of_bags', 1))
+        approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
+        meeting_point = request.POST.get('meeting_point', '').strip()
+        special_notes = request.POST.get('special_notes', '').strip()
+        scheduled_date = request.POST.get('scheduled_date', '').strip()
+        scheduled_clock = request.POST.get('scheduled_clock', '').strip()
+        scheduled_time_raw = f'{scheduled_date}T{scheduled_clock}' if scheduled_date and scheduled_clock else ''
+
+        scheduled_time = timezone.now()
+        if scheduled_time_raw:
+            try:
+                scheduled_time = datetime.fromisoformat(scheduled_time_raw)
+                if timezone.is_naive(scheduled_time):
+                    scheduled_time = timezone.make_aware(scheduled_time)
+            except ValueError:
+                messages.error(request, 'Please enter a valid booking date and time.')
+                return redirect('bookings:book_coolie')
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
         stn_obj = get_object_or_404(Station, id=station_id)
         plat_obj = Platform.objects.filter(id=platform_id).first() if platform_id else None
@@ -76,11 +139,18 @@ def book_coolie_view(request):
             approx_weight_kg=approx_weight_kg,
             meeting_point=meeting_point or f"Platform {plat_obj.number if plat_obj else '1'} Main Gate",
             special_notes=special_notes,
+<<<<<<< HEAD
             status='REQUESTED'
+=======
+            scheduled_time=scheduled_time,
+            status='REQUESTED',
+            payment_status='PENDING',
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         )
         booking.calculate_fare()
         booking.save()
 
+<<<<<<< HEAD
         # Send notification to coolie if assigned
         if coolie_obj:
             Notification.objects.create(
@@ -93,6 +163,10 @@ def book_coolie_view(request):
 
         messages.success(request, f"Booking request #{booking.booking_id} created successfully! Waiting for coolie confirmation.")
         return redirect('bookings:tracking', booking_id=booking.booking_id)
+=======
+        # Redirect to payment page instead of directly confirming
+        return redirect('bookings:payment', booking_id=booking.booking_id)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     context = {
         'stations': stations,
@@ -104,6 +178,7 @@ def book_coolie_view(request):
 
 
 @login_required
+<<<<<<< HEAD
 def booking_tracking_view(request, booking_id):
     """
     Visual Timeline Tracking Page for passenger bookings with Coolie profile card & Review form.
@@ -112,33 +187,208 @@ def booking_tracking_view(request, booking_id):
 
     # Check permission (passenger, assigned coolie, or admin)
     if not (booking.passenger == request.user or (hasattr(request.user, 'coolie_profile') and booking.coolie == request.user.coolie_profile) or request.user.role == 'ADMIN' or request.user.is_superuser):
+=======
+def payment_page_view(request, booking_id):
+    """Show the payment page; order creation happens through create_payment_view."""
+    booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
+
+    # Prevent re-payment if already paid
+    if booking.payment_status == 'PAID':
+        return redirect('bookings:payment_success', booking_id=booking.booking_id)
+
+    razorpay_configured = bool(settings.RAZORPAY_KEY_ID and settings.RAZORPAY_KEY_SECRET)
+
+    context = {
+        'booking': booking,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+        'amount_paise': _amount_in_paise(booking.total_fare),
+        'razorpay_configured': razorpay_configured,
+        'passenger_name': request.user.get_full_name() or request.user.username,
+        'passenger_email': request.user.email or '',
+        'passenger_phone': request.user.phone or '',
+    }
+    return render(request, 'bookings/payment.html', context)
+
+
+@login_required
+@require_POST
+def create_payment_view(request, booking_id):
+    """Create one server-side Razorpay order for a pending booking."""
+    booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
+    if booking.payment_status == 'PAID':
+        return JsonResponse({'status': 'already_paid', 'redirect': reverse('bookings:payment_success', args=[booking.booking_id])})
+    if booking.status == 'CANCELLED':
+        return JsonResponse({'status': 'failed', 'message': 'This booking is cancelled.'}, status=400)
+    if not (settings.RAZORPAY_KEY_ID and settings.RAZORPAY_KEY_SECRET):
+        return JsonResponse({'status': 'failed', 'message': 'Payment gateway is not configured.'}, status=503)
+
+    # The amount is always recalculated from the booking, never accepted from the browser.
+    booking.calculate_fare()
+    amount_paise = _amount_in_paise(booking.total_fare)
+    if (booking.payment_status == 'PENDING' and booking.razorpay_order_id and
+            booking.payment_amount == booking.total_fare):
+        return JsonResponse({'status': 'created', 'order_id': booking.razorpay_order_id, 'amount': amount_paise})
+
+    try:
+        order = _razorpay_client().order.create({
+            'amount': amount_paise,
+            'currency': 'INR',
+            'receipt': booking.booking_id,
+            'notes': {'booking_id': booking.booking_id, 'station': booking.station.code},
+        })
+    except Exception:
+        return JsonResponse({'status': 'failed', 'message': 'Unable to start payment. Please try again.'}, status=502)
+
+    booking.razorpay_order_id = order['id']
+    booking.payment_amount = booking.total_fare
+    booking.save(update_fields=['total_fare', 'base_fare', 'extra_bag_fare', 'razorpay_order_id', 'payment_amount', 'updated_at'])
+    return JsonResponse({'status': 'created', 'order_id': order['id'], 'amount': amount_paise})
+
+
+@login_required
+@require_POST
+def verify_payment_view(request, booking_id):
+    """Verify Razorpay payment signature on backend — NEVER trust frontend."""
+    booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
+
+    if booking.payment_status == 'PAID':
+        return JsonResponse({'status': 'already_paid', 'redirect': f'/bookings/payment-success/{booking.booking_id}/'})
+
+    razorpay_order_id = request.POST.get('razorpay_order_id', '')
+    razorpay_payment_id = request.POST.get('razorpay_payment_id', '')
+    razorpay_signature = request.POST.get('razorpay_signature', '')
+
+    # Validate all fields present
+    if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+        booking.payment_status = 'FAILED'
+        booking.save(update_fields=['payment_status'])
+        return JsonResponse({'status': 'failed', 'message': 'Missing payment fields'}, status=400)
+
+    # Verify order_id matches what we stored
+    if razorpay_order_id != booking.razorpay_order_id:
+        booking.payment_status = 'FAILED'
+        booking.save(update_fields=['payment_status'])
+        return JsonResponse({'status': 'failed', 'message': 'Order ID mismatch'}, status=400)
+
+    if not booking.razorpay_order_id or booking.payment_amount != booking.total_fare:
+        return JsonResponse({'status': 'failed', 'message': 'Payment order is invalid or expired.'}, status=400)
+
+    try:
+        client = _razorpay_client()
+        client.utility.verify_payment_signature({
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature,
+        })
+        payment = client.payment.fetch(razorpay_payment_id)
+        if (payment.get('order_id') != booking.razorpay_order_id or
+                payment.get('amount') != _amount_in_paise(booking.payment_amount) or
+                payment.get('status') != 'captured'):
+            raise ValueError('Payment was not captured for this booking.')
+
+        with transaction.atomic():
+            locked_booking = Booking.objects.select_for_update().get(pk=booking.pk)
+            if locked_booking.payment_status == 'PAID':
+                return JsonResponse({'status': 'already_paid', 'redirect': f'/bookings/payment-success/{booking.booking_id}/'})
+            locked_booking.payment_status = 'PAID'
+            locked_booking.razorpay_payment_id = razorpay_payment_id
+            locked_booking.razorpay_signature = razorpay_signature
+            locked_booking.payment_method = payment.get('method', '')
+            locked_booking.transaction_date = timezone.now()
+            locked_booking.save(update_fields=[
+                'payment_status', 'razorpay_payment_id', 'razorpay_signature',
+                'payment_method', 'transaction_date', 'updated_at'
+            ])
+            booking = locked_booking
+
+        # Notify coolie
+        if booking.coolie:
+            Notification.objects.create(
+                recipient=booking.coolie.user,
+                title="New Paid Booking Request 🧳",
+                message=f"Passenger {request.user.get_full_name() or request.user.username} paid ₹{booking.total_fare} for booking {booking.booking_id}.",
+                notification_type='BOOKING',
+                link_url="/coolies/dashboard/"
+            )
+
+        notify_booking_created(booking)
+        return JsonResponse({'status': 'success', 'redirect': f'/bookings/payment-success/{booking.booking_id}/'})
+
+    except Exception:
+        booking.payment_status = 'FAILED'
+        booking.save(update_fields=['payment_status', 'updated_at'])
+        return JsonResponse({'status': 'failed', 'message': 'Payment could not be verified.'}, status=400)
+
+
+@login_required
+def payment_success_view(request, booking_id):
+    """Show payment success page — only if payment is verified."""
+    booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
+    if booking.payment_status != 'PAID':
+        messages.error(request, "Payment not verified. Please complete payment.")
+        return redirect('bookings:payment', booking_id=booking_id)
+    return render(request, 'bookings/payment_success.html', {'booking': booking})
+
+
+@login_required
+def payment_failed_view(request, booking_id):
+    """Show payment failed page."""
+    booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
+    if booking.payment_status != 'PAID':
+        booking.payment_status = 'FAILED'
+        booking.save(update_fields=['payment_status', 'updated_at'])
+    return render(request, 'bookings/payment_failed.html', {'booking': booking})
+
+
+@login_required
+def booking_tracking_view(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+
+    if not (booking.passenger == request.user or
+            (hasattr(request.user, 'coolie_profile') and booking.coolie == request.user.coolie_profile) or
+            request.user.role == 'ADMIN' or request.user.is_superuser):
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.error(request, "Unauthorized access to this booking.")
         return redirect('accounts:passenger_dashboard')
 
     existing_review = getattr(booking, 'review', None)
 
+<<<<<<< HEAD
     # Handle review submission
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     if request.method == 'POST' and 'submit_review' in request.POST and booking.status == 'COMPLETED':
         if existing_review:
             messages.info(request, "You have already submitted a review for this booking.")
         else:
+<<<<<<< HEAD
             rating = int(request.POST.get('rating', 5))
             punctuality = int(request.POST.get('punctuality_rating', 5))
             behavior = int(request.POST.get('behavior_rating', 5))
             comment = request.POST.get('comment', '').strip()
 
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             Review.objects.create(
                 booking=booking,
                 passenger=request.user,
                 coolie=booking.coolie,
+<<<<<<< HEAD
                 rating=rating,
                 punctuality_rating=punctuality,
                 behavior_rating=behavior,
                 comment=comment
+=======
+                rating=int(request.POST.get('rating', 5)),
+                punctuality_rating=int(request.POST.get('punctuality_rating', 5)),
+                behavior_rating=int(request.POST.get('behavior_rating', 5)),
+                comment=request.POST.get('comment', '').strip()
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             )
             messages.success(request, "Thank you! Your rating and review have been submitted.")
             return redirect('bookings:tracking', booking_id=booking.booking_id)
 
+<<<<<<< HEAD
     # Handle cancellation
     if request.method == 'POST' and 'cancel_booking' in request.POST:
         if booking.status in ['REQUESTED', 'ACCEPTED']:
@@ -147,6 +397,13 @@ def booking_tracking_view(request, booking_id):
             booking.cancellation_reason = reason
             booking.save()
 
+=======
+    if request.method == 'POST' and 'cancel_booking' in request.POST:
+        if booking.status in ['REQUESTED', 'ACCEPTED']:
+            booking.status = 'CANCELLED'
+            booking.cancellation_reason = request.POST.get('cancellation_reason', 'Cancelled by passenger')
+            booking.save()
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             if booking.coolie:
                 Notification.objects.create(
                     recipient=booking.coolie.user,
@@ -155,6 +412,7 @@ def booking_tracking_view(request, booking_id):
                     notification_type='BOOKING',
                     link_url="/coolies/dashboard/"
                 )
+<<<<<<< HEAD
             messages.info(request, "Your booking has been cancelled.")
             return redirect('bookings:tracking', booking_id=booking.booking_id)
 
@@ -163,13 +421,26 @@ def booking_tracking_view(request, booking_id):
         'existing_review': existing_review,
     }
     return render(request, 'bookings/booking_tracking.html', context)
+=======
+            notify_booking_cancelled(booking)
+            messages.info(request, "Your booking has been cancelled.")
+            return redirect('bookings:tracking', booking_id=booking.booking_id)
+
+    return render(request, 'bookings/booking_tracking.html', {
+        'booking': booking,
+        'existing_review': existing_review,
+    })
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 
 @login_required
 def booking_history_view(request):
+<<<<<<< HEAD
     """
     List of past and active bookings for the logged-in passenger.
     """
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     bookings = Booking.objects.filter(passenger=request.user).order_by('-created_at')
     return render(request, 'bookings/booking_history.html', {'bookings': bookings})
 

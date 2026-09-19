@@ -14,4 +14,8 @@ urlpatterns = [
     path('complaints/', views.admin_manage_complaints, name='complaints'),
     path('reviews/', views.admin_manage_reviews, name='reviews'),
     path('api/charts-data/', views.AnalyticsDataAPIView.as_view(), name='api_charts_data'),
+<<<<<<< HEAD
+=======
+
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 ]

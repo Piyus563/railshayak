@@ -29,6 +29,16 @@ class Booking(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
 
+<<<<<<< HEAD
+=======
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING', 'Payment Pending'),
+        ('PAID', 'Payment Successful'),
+        ('FAILED', 'Payment Failed'),
+        ('REFUNDED', 'Refunded'),
+    ]
+
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     booking_id = models.CharField(max_length=30, unique=True, default=generate_booking_id)
     passenger = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='bookings')
     coolie = models.ForeignKey('accounts.CoolieProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_bookings')
@@ -56,6 +66,18 @@ class Booking(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='REQUESTED')
     cancellation_reason = models.TextField(blank=True)
 
+<<<<<<< HEAD
+=======
+    # Payment fields
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
+    razorpay_order_id = models.CharField(max_length=100, blank=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True)
+    payment_method = models.CharField(max_length=30, blank=True)
+    payment_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    transaction_date = models.DateTimeField(null=True, blank=True)
+
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     accepted_at = models.DateTimeField(null=True, blank=True)

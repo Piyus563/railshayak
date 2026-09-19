@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Pay for Booking #{{ booking.booking_id }} — RailSaathi{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 680px;">
+  <div class="mb-4">
+    <a href="{% url 'bookings:book_coolie' %}" class="text-decoration-none text-muted small">
+      <i class="fas fa-arrow-left me-1"></i> Back to Booking
+    </a>
+    <h2 class="fw-bold mt-2">💳 Complete Your Payment</h2>
+    <p class="text-muted small">Review your booking details and pay securely via UPI / QR / Card.</p>
+  </div>
+
+  <!-- Booking Summary Card -->
+  <div class="rs-card p-4 mb-4">
+    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-receipt me-2"></i> Booking Summary</h5>
+
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Passenger</div>
+          <div class="fw-bold">{{ passenger_name }}</div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Booking ID</div>
+          <div class="fw-bold text-primary">{{ booking.booking_id }}</div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Station</div>
+          <div class="fw-bold">{{ booking.station.name }}</div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Platform</div>
+          <div class="fw-bold">Platform {{ booking.platform.number|default:'1' }}</div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Booking Date &amp; Time</div>
+          <div class="fw-bold">{{ booking.scheduled_time|date:"d M Y, h:i A" }}</div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Coolie / Sahayak</div>
+          <div class="fw-bold">
+            {% if booking.coolie %}
+              {{ booking.coolie.user.get_full_name|default:booking.coolie.user.username }}
+              <div class="text-muted small">Badge: {{ booking.coolie.badge_number }}</div>
+            {% else %}
+              Auto-assigned
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 bg-light rounded-3">
+          <div class="text-muted small mb-1">Luggage</div>
+          <div class="fw-bold">{{ booking.number_of_bags }} Bags — {{ booking.get_luggage_type_display }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fare Breakdown -->
+    <div class="mt-4 p-3 bg-light rounded-3">
+      <div class="d-flex justify-content-between mb-2 small">
+        <span class="text-muted">Base Fare (1 Bag):</span>
+        <span class="fw-bold">₹{{ booking.base_fare }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small">
+        <span class="text-muted">Extra Bags Charge:</span>
+        <span class="fw-bold">₹{{ booking.extra_bag_fare }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small">
+        <span class="text-muted">Platform Convenience Fee:</span>
+        <span class="text-success fw-bold">FREE</span>
+      </div>
+      <hr class="my-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold fs-5">Total Amount:</span>
+        <span class="fw-bold text-success fs-2">₹{{ booking.total_fare }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Section -->
+  <div class="rs-card p-4 mb-4">
+    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-lock me-2"></i> Secure Payment</h5>
+
+    {% if razorpay_configured %}
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <span class="badge bg-light text-dark border px-3 py-2"><img src="https://cdn.razorpay.com/static/assets/logo/rzp-logo.svg" height="16" alt="Razorpay"> Secured by Razorpay</span>
+        <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-shield-alt text-success me-1"></i> 256-bit SSL</span>
+        <span class="badge bg-light text-dark border px-3 py-2"><i class="fas fa-mobile-alt text-primary me-1"></i> UPI / QR / Card</span>
+      </div>
+
+      <button id="payNowBtn" class="btn btn-rs-primary btn-accessible-large w-100 fw-bold">
+        <i class="fas fa-lock me-2"></i> Pay ₹{{ booking.total_fare }} Securely
+      </button>
+
+      <div id="paymentStatus" class="small text-muted mt-3" role="status" aria-live="polite">
+        <i class="fas fa-shield-alt me-1"></i> UPI, QR and card payments are processed by Razorpay.
+      </div>
+
+      <div id="paymentLoader" class="text-center py-3 d-none">
+        <div class="spinner-border text-primary me-2" role="status"></div>
+        <span class="text-muted">Processing payment... Please wait.</span>
+      </div>
+
+    {% else %}
+      <div class="alert alert-warning rounded-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Razorpay not configured.</strong> Add <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> to your <code>.env</code> file.
+        <hr>
+        <a href="https://dashboard.razorpay.com/app/keys" target="_blank" class="btn btn-sm btn-warning mt-1">
+          Get Razorpay Test Keys →
+        </a>
+      </div>
+
+      <div class="alert alert-secondary rounded-3 small mb-0">
+        Payment is unavailable until Razorpay TEST MODE keys are configured on the server.
+      </div>
+    {% endif %}
+
+    <div class="text-center text-muted small mt-3">
+      <i class="fas fa-info-circle me-1"></i>
+      Your booking will be confirmed only after successful payment verification.
+    </div>
+  </div>
+
+  <div class="text-center">
+    <a href="{% url 'bookings:payment_failed' booking.booking_id %}" class="text-muted small text-decoration-none">
+      <i class="fas fa-times me-1"></i> Cancel and go back
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if razorpay_configured %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const payBtn = document.getElementById('payNowBtn');
+  const loader = document.getElementById('paymentLoader');
+  const status = document.getElementById('paymentStatus');
+  const csrfToken = '{{ csrf_token }}';
+
+  function resetPaymentButton() {
+    loader.classList.add('d-none');
+    payBtn.classList.remove('d-none');
+    payBtn.disabled = false;
+  }
+
+  payBtn.addEventListener('click', async function() {
+    payBtn.disabled = true;
+    status.textContent = 'Starting secure payment...';
+    try {
+      const orderResponse = await fetch("{% url 'bookings:create_payment' booking.booking_id %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'}
+      });
+      const order = await orderResponse.json();
+      if (!orderResponse.ok || order.status !== 'created') {
+        if (order.redirect) window.location.href = order.redirect;
+        throw new Error(order.message || 'Unable to start payment.');
+      }
+
+      const options = {
+        key: "{{ razorpay_key_id }}",
+        amount: order.amount,
+        currency: "INR",
+        name: "RailSaathi",
+        description: "Coolie Booking #{{ booking.booking_id }}",
+        order_id: order.order_id,
+        prefill: {name: "{{ passenger_name }}", email: "{{ passenger_email }}", contact: "{{ passenger_phone }}"},
+        theme: {color: "#0f2b48"},
+        modal: {ondismiss: resetPaymentButton},
+        handler: function(response) {
+          loader.classList.remove('d-none');
+          payBtn.classList.add('d-none');
+          status.textContent = 'Verifying payment securely...';
+          fetch("{% url 'bookings:verify_payment' booking.booking_id %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          }).then(async function(verificationResponse) {
+            const result = await verificationResponse.json();
+            if (!verificationResponse.ok || !result.redirect) {
+              throw new Error(result.message || 'Payment verification failed.');
+            }
+            window.location.href = result.redirect;
+          }).catch(function(error) {
+            window.location.href = "{% url 'bookings:payment_failed' booking.booking_id %}";
+          });
+        }
+      };
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function() {
+        window.location.href = "{% url 'bookings:payment_failed' booking.booking_id %}";
+      });
+      rzp.open();
+    } catch (error) {
+      status.textContent = error.message;
+      resetPaymentButton();
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

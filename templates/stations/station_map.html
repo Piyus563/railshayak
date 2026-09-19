@@ -31,12 +31,17 @@
   <!-- Map Container with Facility Filter Sidebar -->
   <div class="row g-4">
     <div class="col-lg-9">
+<<<<<<< HEAD
       <div class="rs-card p-2 bg-white shadow-lg position-relative">
         <div id="station-map"></div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-2 pt-2">
           <span id="map-status" class="small text-muted" role="status">Loading live station data...</span>
           <button id="locate-me" type="button" class="btn btn-sm btn-outline-primary"><i class="fas fa-location-crosshairs me-1"></i>Show my location</button>
         </div>
+=======
+      <div class="rs-card bg-white shadow-lg position-relative" style="overflow:hidden;">
+        <div id="station-map"></div>
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
       </div>
     </div>
 
@@ -105,12 +110,16 @@
 {% block extra_scripts %}
 {{ facilities_data|json_script:"facilities-data" }}
 {{ platforms_data|json_script:"platforms-data" }}
+<<<<<<< HEAD
 {{ station_data|json_script:"station-data" }}
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 <script src="/static/js/station_map.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const facilitiesData = JSON.parse(document.getElementById('facilities-data').textContent || '[]');
     const platformsData = JSON.parse(document.getElementById('platforms-data').textContent || '[]');
+<<<<<<< HEAD
     const stationData = JSON.parse(document.getElementById('station-data').textContent || '{}');
 
     initStationMap('station-map', stationData.latitude, stationData.longitude, stationData.name, facilitiesData, platformsData, {
@@ -118,6 +127,18 @@
       statusElementId: 'map-status',
       locateButtonId: 'locate-me'
     });
+=======
+    const stationLat = {{ station.latitude }};
+    const stationLng = {{ station.longitude }};
+    const stationName = "{{ station.name|escapejs }}";
+
+    const map = initStationMap('station-map', stationLat, stationLng, stationName, facilitiesData, platformsData);
+
+    // Force Leaflet to recalculate size after layout is fully painted
+    setTimeout(function() {
+      if (map) map.invalidateSize();
+    }, 300);
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   });
 </script>
 {% endblock %}

@@ -6,6 +6,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import landing_view
+<<<<<<< HEAD
+=======
+from analytics.views import AnalyticsDataAPIView
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,7 +31,11 @@ urlpatterns = [
 
     # REST APIs
     path('api/v1/', include('config.api_router')),
+<<<<<<< HEAD
     path('api/v1/analytics-data/', include('analytics.urls', namespace='api_analytics')),
+=======
+    path('api/v1/analytics-data/', AnalyticsDataAPIView.as_view(), name='api_analytics_charts'),
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 ]
 
 if settings.DEBUG:

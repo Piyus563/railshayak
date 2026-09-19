@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful — RailSaathi{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 620px;">
+  <div class="rs-card p-4 p-md-5 text-center shadow-lg">
+
+    <!-- Success Icon -->
+    <div class="mb-4">
+      <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success mb-3"
+           style="width: 80px; height: 80px;">
+        <i class="fas fa-check text-white" style="font-size: 2.2rem;"></i>
+      </div>
+      <h2 class="fw-bold text-success mb-1">Payment Successful!</h2>
+      <p class="text-muted">Your coolie booking has been confirmed.</p>
+    </div>
+
+    <!-- Booking Details -->
+    <div class="p-4 bg-light rounded-4 text-start mb-4">
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Booking ID</span>
+        <span class="fw-bold text-primary">{{ booking.booking_id }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Payment ID</span>
+        <span class="fw-bold" style="font-size:11px;">{{ booking.razorpay_payment_id }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Station</span>
+        <span class="fw-bold">{{ booking.station.name }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Coolie / Sahayak</span>
+        <span class="fw-bold">
+          {% if booking.coolie %}
+            {{ booking.coolie.user.get_full_name|default:booking.coolie.user.username }}
+          {% else %}
+            Auto-assigned
+          {% endif %}
+        </span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Platform</span>
+        <span class="fw-bold">Platform {{ booking.platform.number|default:'1' }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Booking Date &amp; Time</span>
+        <span class="fw-bold">{{ booking.scheduled_time|date:"d M Y, h:i A" }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Luggage</span>
+        <span class="fw-bold">{{ booking.number_of_bags }} Bags</span>
+      </div>
+      <div class="d-flex justify-content-between mb-2 small border-bottom pb-2">
+        <span class="text-muted">Transaction Date</span>
+        <span class="fw-bold">{{ booking.transaction_date|date:"d M Y, h:i A"|default:"Just now" }}</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <span class="fw-bold fs-5">Amount Paid</span>
+        <span class="fw-bold text-success fs-3">₹{{ booking.total_fare }}</span>
+      </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="mb-4">
+      <span class="badge bg-success px-4 py-2 rounded-pill fs-6">
+        <i class="fas fa-check-circle me-1"></i> Booking Confirmed
+      </span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+      <a href="{% url 'bookings:tracking' booking.booking_id %}" class="btn btn-rs-primary">
+        <i class="fas fa-eye me-1"></i> View Booking
+      </a>
+      <button type="button" class="btn btn-rs-outline" onclick="window.print()">
+        <i class="fas fa-download me-1"></i> Download Ticket
+      </button>
+      <a href="{% url 'accounts:passenger_dashboard' %}" class="btn btn-rs-outline">
+        <i class="fas fa-home me-1"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <div class="mt-4 text-muted small">
+      <i class="fas fa-info-circle me-1"></i>
+      Your Sahayak will meet you at: <strong>{{ booking.meeting_point }}</strong>
+    </div>
+  </div>
+</div>
+{% endblock %}

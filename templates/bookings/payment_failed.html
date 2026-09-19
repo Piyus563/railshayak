@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Failed — RailSaathi{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 560px;">
+  <div class="rs-card p-4 p-md-5 text-center shadow-lg">
+
+    <!-- Failed Icon -->
+    <div class="mb-4">
+      <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger mb-3"
+           style="width: 80px; height: 80px;">
+        <i class="fas fa-times text-white" style="font-size: 2.2rem;"></i>
+      </div>
+      <h2 class="fw-bold text-danger mb-1">Payment Failed</h2>
+      <p class="text-muted">Your payment could not be verified. Your booking has <strong>not</strong> been confirmed.</p>
+    </div>
+
+    <div class="p-3 bg-light rounded-3 text-start mb-4 small">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Booking ID</span>
+        <span class="fw-bold">{{ booking.booking_id }}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-muted">Amount</span>
+        <span class="fw-bold">₹{{ booking.total_fare }}</span>
+      </div>
+      <div class="d-flex justify-content-between">
+        <span class="text-muted">Status</span>
+        <span class="badge bg-danger">Payment Failed</span>
+      </div>
+    </div>
+
+    <div class="alert alert-warning rounded-3 text-start small mb-4">
+      <i class="fas fa-info-circle me-1"></i>
+      If money was deducted from your account, it will be automatically refunded within 5-7 business days.
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+      <a href="{% url 'bookings:payment' booking.booking_id %}" class="btn btn-rs-primary">
+        <i class="fas fa-redo me-1"></i> Try Again
+      </a>
+      <a href="{% url 'bookings:book_coolie' %}" class="btn btn-rs-outline">
+        <i class="fas fa-arrow-left me-1"></i> Back to Booking
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

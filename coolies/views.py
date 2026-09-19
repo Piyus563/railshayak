@@ -8,6 +8,13 @@ from decimal import Decimal
 from accounts.models import CoolieProfile, User
 from stations.models import Station, Platform
 from bookings.models import Booking
+<<<<<<< HEAD
+=======
+from bookings.whatsapp import (
+    notify_booking_accepted, notify_booking_started,
+    notify_booking_completed, notify_booking_rejected
+)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from reviews.models import Review
 from notifications.models import Notification
 
@@ -49,11 +56,20 @@ def coolie_dashboard_view(request):
     """
     Dedicated Coolie / Sahayak Dashboard with instant status toggle and booking request management.
     """
+<<<<<<< HEAD
     coolie = getattr(request.user, 'coolie_profile', None)
     if coolie is None:
         messages.error(request, "Access restricted to registered coolie partners.")
         return redirect('accounts:passenger_dashboard')
 
+=======
+    if not (request.user.role == 'COOLIE' or hasattr(request.user, 'coolie_profile')):
+        messages.error(request, "Access restricted to registered coolie partners.")
+        return redirect('accounts:passenger_dashboard')
+
+    coolie = request.user.coolie_profile
+
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     # Handle Online/Offline toggle
     if request.method == 'POST' and 'toggle_status' in request.POST:
         coolie.is_online = not coolie.is_online
@@ -102,10 +118,18 @@ def update_booking_status(request, booking_id, action):
     """
     Coolie action handler to Accept, Reject, Start Service, or Complete Service.
     """
+<<<<<<< HEAD
     coolie = getattr(request.user, 'coolie_profile', None)
     if coolie is None:
         messages.error(request, "Unauthorized action.")
         return redirect('landing')
+=======
+    if not (request.user.role == 'COOLIE' or hasattr(request.user, 'coolie_profile')):
+        messages.error(request, "Unauthorized action.")
+        return redirect('landing')
+
+    coolie = request.user.coolie_profile
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     booking = get_object_or_404(Booking, booking_id=booking_id, coolie=coolie)
     now = timezone.now()
 
@@ -113,7 +137,10 @@ def update_booking_status(request, booking_id, action):
         booking.status = 'ACCEPTED'
         booking.accepted_at = now
         booking.save()
+<<<<<<< HEAD
         # Create passenger notification
+=======
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         Notification.objects.create(
             recipient=booking.passenger,
             title="Coolie Accepted Your Booking! 🎉",
@@ -121,6 +148,10 @@ def update_booking_status(request, booking_id, action):
             notification_type='BOOKING',
             link_url=f"/bookings/track/{booking.booking_id}/"
         )
+<<<<<<< HEAD
+=======
+        notify_booking_accepted(booking)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.success(request, f"Booking {booking.booking_id} accepted! Please reach the meeting point.")
 
     elif action == 'reject' and booking.status == 'REQUESTED':
@@ -133,6 +164,10 @@ def update_booking_status(request, booking_id, action):
             notification_type='BOOKING',
             link_url="/bookings/book/"
         )
+<<<<<<< HEAD
+=======
+        notify_booking_rejected(booking)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.warning(request, f"Booking {booking.booking_id} declined.")
 
     elif action == 'start' and booking.status == 'ACCEPTED':
@@ -146,17 +181,27 @@ def update_booking_status(request, booking_id, action):
             notification_type='BOOKING',
             link_url=f"/bookings/track/{booking.booking_id}/"
         )
+<<<<<<< HEAD
+=======
+        notify_booking_started(booking)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.info(request, f"Service started for booking {booking.booking_id}.")
 
     elif action == 'complete' and booking.status == 'SERVICE_STARTED':
         booking.status = 'COMPLETED'
         booking.completed_at = now
         booking.save()
+<<<<<<< HEAD
         # Update coolie total bookings & earnings
         coolie.total_bookings_count += 1
         coolie.daily_earnings += booking.total_fare
         coolie.save(update_fields=['total_bookings_count', 'daily_earnings'])
 
+=======
+        coolie.total_bookings_count += 1
+        coolie.daily_earnings += booking.total_fare
+        coolie.save(update_fields=['total_bookings_count', 'daily_earnings'])
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         Notification.objects.create(
             recipient=booking.passenger,
             title="Service Completed! Please Rate Your Coolie ⭐",
@@ -164,6 +209,10 @@ def update_booking_status(request, booking_id, action):
             notification_type='BOOKING',
             link_url=f"/bookings/track/{booking.booking_id}/"
         )
+<<<<<<< HEAD
+=======
+        notify_booking_completed(booking)
+>>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.success(request, f"Great job! Booking {booking.booking_id} marked as completed. Total fare: ₹{booking.total_fare}")
 
     return redirect('coolies:dashboard')
