@@ -1,9 +1,6 @@
 from django.shortcuts import render, get_object_or_404
-<<<<<<< HEAD
 from django.http import Http404
-=======
 from django.http import JsonResponse
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -53,7 +50,6 @@ def station_detail_view(request, code):
     })
 
 
-<<<<<<< HEAD
 def station_map_view(request, code=None):
     """
     Interactive station map powered by Leaflet.js and OpenStreetMap.
@@ -65,13 +61,6 @@ def station_map_view(request, code=None):
         station = station or Station.objects.filter(is_active=True).first()
         if station is None:
             raise Http404('No active stations are available.')
-=======
-def station_map_view(request, code='NJP'):
-    """
-    Interactive station map powered by Leaflet.js and OpenStreetMap.
-    """
-    station = get_object_or_404(Station, code__iexact=code)
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     all_stations = Station.objects.filter(is_active=True)
     facilities = station.facilities.all()
     platforms = station.platforms.all()
@@ -86,10 +75,7 @@ def station_map_view(request, code='NJP'):
             'latitude': float(f.latitude) if f.latitude else float(station.latitude),
             'longitude': float(f.longitude) if f.longitude else float(station.longitude),
             'contact_number': f.contact_number or '',
-<<<<<<< HEAD
             'is_operational': f.is_operational,
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         }
         for f in facilities
     ]
@@ -107,14 +93,11 @@ def station_map_view(request, code='NJP'):
     return render(request, 'stations/station_map.html', {
         'station': station,
         'all_stations': all_stations,
-<<<<<<< HEAD
         'station_data': {
             'latitude': float(station.latitude),
             'longitude': float(station.longitude),
             'name': station.name,
         },
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         'facilities': facilities,
         'platforms': platforms,
         'facilities_data': facilities_data,
@@ -133,11 +116,7 @@ class StationViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def map_data(self, request, code=None):
         station = self.get_object()
-<<<<<<< HEAD
-        facilities = FacilitySerializer(station.facilities.all(), many=True).data
-=======
         facilities = FacilitySerializer(station.facilities.filter(is_operational=True), many=True).data
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         platforms = PlatformSerializer(station.platforms.all(), many=True).data
         return Response({
             'station': {

@@ -10,9 +10,6 @@ urlpatterns = [
     path('dashboard/', views.dashboard_redirect, name='dashboard_redirect'),
     path('passenger/dashboard/', views.passenger_dashboard, name='passenger_dashboard'),
     path('notifications/', views.notifications_view, name='notifications'),
-<<<<<<< HEAD
-=======
     path('assistant/chat/', views.assistant_chat_api, name='assistant_chat'),
     path('assistant/recommendations/', views.coolie_recommendations_api, name='coolie_recommendations'),
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 ]

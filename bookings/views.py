@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.utils import timezone
-from decimal import Decimal
-=======
 import razorpay
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
@@ -19,29 +12,23 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.conf import settings
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from .models import Booking
 from .serializers import BookingSerializer
-<<<<<<< HEAD
-=======
 from .whatsapp import (
     notify_booking_created, notify_booking_accepted,
     notify_booking_started, notify_booking_completed,
     notify_booking_cancelled, notify_booking_rejected
 )
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from accounts.models import CoolieProfile, User
 from stations.models import Station, Platform
 from reviews.models import Review
 from notifications.models import Notification
 
 
-<<<<<<< HEAD
-=======
 def _razorpay_client():
     return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
@@ -50,32 +37,16 @@ def _amount_in_paise(amount):
     return int(Decimal(amount).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) * 100)
 
 
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 # --- HTML Views ---
 
 @login_required
 def book_coolie_view(request):
-<<<<<<< HEAD
-    """
-    Primary MVP Booking Wizard: Station -> Platform -> Luggage -> Coolie Selection -> Live Fare -> Confirmation.
-    """
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
+    """Create a booking and send the passenger to payment."""
     stations = Station.objects.filter(is_active=True)
     selected_station_code = request.GET.get('station', 'NJP')
     station = Station.objects.filter(code__iexact=selected_station_code).first() or stations.first()
     platforms = station.platforms.all() if station else []
-<<<<<<< HEAD
-
-    # Get available online verified coolies for this station
-    available_coolies = CoolieProfile.objects.filter(
-        station=station,
-        is_verified=True,
-        is_online=True
-    )
-=======
     available_coolies = CoolieProfile.objects.filter(station=station, is_verified=True, is_online=True)
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     if request.method == 'POST':
         station_id = request.POST.get('station_id')
@@ -87,20 +58,6 @@ def book_coolie_view(request):
         coach_number = request.POST.get('coach_number', '').strip()
         seat_number = request.POST.get('seat_number', '').strip()
         luggage_type = request.POST.get('luggage_type', 'TROLLEY')
-<<<<<<< HEAD
-        try:
-            number_of_bags = int(request.POST.get('number_of_bags', 1))
-            approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
-        except (TypeError, ValueError):
-            messages.error(request, "Please enter valid numbers for bags and luggage weight.")
-            return redirect('bookings:book_coolie')
-
-        if number_of_bags < 1 or approx_weight_kg < 1:
-            messages.error(request, "Bags and luggage weight must be at least 1.")
-            return redirect('bookings:book_coolie')
-        meeting_point = request.POST.get('meeting_point', '').strip()
-        special_notes = request.POST.get('special_notes', '').strip()
-=======
         number_of_bags = int(request.POST.get('number_of_bags', 1))
         approx_weight_kg = int(request.POST.get('approx_weight_kg', 20))
         meeting_point = request.POST.get('meeting_point', '').strip()
@@ -118,7 +75,6 @@ def book_coolie_view(request):
             except ValueError:
                 messages.error(request, 'Please enter a valid booking date and time.')
                 return redirect('bookings:book_coolie')
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
         stn_obj = get_object_or_404(Station, id=station_id)
         plat_obj = Platform.objects.filter(id=platform_id).first() if platform_id else None
@@ -139,34 +95,15 @@ def book_coolie_view(request):
             approx_weight_kg=approx_weight_kg,
             meeting_point=meeting_point or f"Platform {plat_obj.number if plat_obj else '1'} Main Gate",
             special_notes=special_notes,
-<<<<<<< HEAD
-            status='REQUESTED'
-=======
             scheduled_time=scheduled_time,
             status='REQUESTED',
             payment_status='PENDING',
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         )
         booking.calculate_fare()
         booking.save()
 
-<<<<<<< HEAD
-        # Send notification to coolie if assigned
-        if coolie_obj:
-            Notification.objects.create(
-                recipient=coolie_obj.user,
-                title="New Booking Request Received 🧳",
-                message=f"Passenger {request.user.get_full_name() or request.user.username} requested luggage assistance at Platform {plat_obj.number if plat_obj else '1'}. Fare: ₹{booking.total_fare}",
-                notification_type='BOOKING',
-                link_url="/coolies/dashboard/"
-            )
-
-        messages.success(request, f"Booking request #{booking.booking_id} created successfully! Waiting for coolie confirmation.")
-        return redirect('bookings:tracking', booking_id=booking.booking_id)
-=======
         # Redirect to payment page instead of directly confirming
         return redirect('bookings:payment', booking_id=booking.booking_id)
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
     context = {
         'stations': stations,
@@ -178,16 +115,6 @@ def book_coolie_view(request):
 
 
 @login_required
-<<<<<<< HEAD
-def booking_tracking_view(request, booking_id):
-    """
-    Visual Timeline Tracking Page for passenger bookings with Coolie profile card & Review form.
-    """
-    booking = get_object_or_404(Booking, booking_id=booking_id)
-
-    # Check permission (passenger, assigned coolie, or admin)
-    if not (booking.passenger == request.user or (hasattr(request.user, 'coolie_profile') and booking.coolie == request.user.coolie_profile) or request.user.role == 'ADMIN' or request.user.is_superuser):
-=======
 def payment_page_view(request, booking_id):
     """Show the payment page; order creation happens through create_payment_view."""
     booking = get_object_or_404(Booking, booking_id=booking_id, passenger=request.user)
@@ -347,48 +274,33 @@ def booking_tracking_view(request, booking_id):
     if not (booking.passenger == request.user or
             (hasattr(request.user, 'coolie_profile') and booking.coolie == request.user.coolie_profile) or
             request.user.role == 'ADMIN' or request.user.is_superuser):
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         messages.error(request, "Unauthorized access to this booking.")
         return redirect('accounts:passenger_dashboard')
 
     existing_review = getattr(booking, 'review', None)
 
-<<<<<<< HEAD
     # Handle review submission
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     if request.method == 'POST' and 'submit_review' in request.POST and booking.status == 'COMPLETED':
         if existing_review:
             messages.info(request, "You have already submitted a review for this booking.")
         else:
-<<<<<<< HEAD
             rating = int(request.POST.get('rating', 5))
             punctuality = int(request.POST.get('punctuality_rating', 5))
             behavior = int(request.POST.get('behavior_rating', 5))
             comment = request.POST.get('comment', '').strip()
 
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             Review.objects.create(
                 booking=booking,
                 passenger=request.user,
                 coolie=booking.coolie,
-<<<<<<< HEAD
                 rating=rating,
                 punctuality_rating=punctuality,
                 behavior_rating=behavior,
                 comment=comment
-=======
-                rating=int(request.POST.get('rating', 5)),
-                punctuality_rating=int(request.POST.get('punctuality_rating', 5)),
-                behavior_rating=int(request.POST.get('behavior_rating', 5)),
-                comment=request.POST.get('comment', '').strip()
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             )
             messages.success(request, "Thank you! Your rating and review have been submitted.")
             return redirect('bookings:tracking', booking_id=booking.booking_id)
 
-<<<<<<< HEAD
     # Handle cancellation
     if request.method == 'POST' and 'cancel_booking' in request.POST:
         if booking.status in ['REQUESTED', 'ACCEPTED']:
@@ -397,13 +309,6 @@ def booking_tracking_view(request, booking_id):
             booking.cancellation_reason = reason
             booking.save()
 
-=======
-    if request.method == 'POST' and 'cancel_booking' in request.POST:
-        if booking.status in ['REQUESTED', 'ACCEPTED']:
-            booking.status = 'CANCELLED'
-            booking.cancellation_reason = request.POST.get('cancellation_reason', 'Cancelled by passenger')
-            booking.save()
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
             if booking.coolie:
                 Notification.objects.create(
                     recipient=booking.coolie.user,
@@ -412,7 +317,6 @@ def booking_tracking_view(request, booking_id):
                     notification_type='BOOKING',
                     link_url="/coolies/dashboard/"
                 )
-<<<<<<< HEAD
             messages.info(request, "Your booking has been cancelled.")
             return redirect('bookings:tracking', booking_id=booking.booking_id)
 
@@ -421,26 +325,13 @@ def booking_tracking_view(request, booking_id):
         'existing_review': existing_review,
     }
     return render(request, 'bookings/booking_tracking.html', context)
-=======
-            notify_booking_cancelled(booking)
-            messages.info(request, "Your booking has been cancelled.")
-            return redirect('bookings:tracking', booking_id=booking.booking_id)
-
-    return render(request, 'bookings/booking_tracking.html', {
-        'booking': booking,
-        'existing_review': existing_review,
-    })
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 
 
 @login_required
 def booking_history_view(request):
-<<<<<<< HEAD
     """
     List of past and active bookings for the logged-in passenger.
     """
-=======
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     bookings = Booking.objects.filter(passenger=request.user).order_by('-created_at')
     return render(request, 'bookings/booking_history.html', {'bookings': bookings})
 

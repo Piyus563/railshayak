@@ -11,8 +11,4 @@ class NotificationSerializer(serializers.ModelSerializer):
             'id', 'recipient', 'title', 'message', 'notification_type',
             'notification_type_display', 'link_url', 'is_read', 'created_at'
         ]
-<<<<<<< HEAD
         read_only_fields = ['id', 'recipient', 'created_at']
-=======
-        read_only_fields = ['id', 'created_at']
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

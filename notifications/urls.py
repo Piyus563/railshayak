@@ -5,8 +5,5 @@ app_name = 'notifications'
 
 urlpatterns = [
     path('read/<int:pk>/', views.mark_notification_read, name='mark_read'),
-<<<<<<< HEAD
-=======
     path('unread-count/', views.unread_count_api, name='unread_count'),
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 ]
