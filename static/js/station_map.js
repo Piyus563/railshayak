@@ -200,21 +200,108 @@ function initStationMap(mapElementId, stationLat, stationLng, stationName, facil
   });
 
   const locateButton = document.getElementById(options.locateButtonId || 'locate-me');
-  if (locateButton && navigator.geolocation) {
-    locateButton.addEventListener('click', function() {
-      setStatus('Finding your location...', 'primary');
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const latLng = [position.coords.latitude, position.coords.longitude];
-        if (userMarker) map.removeLayer(userMarker);
-        if (userAccuracy) map.removeLayer(userAccuracy);
-        userMarker = L.circleMarker(latLng, {radius: 8, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1}).addTo(map).bindPopup('Your current location').openPopup();
-        userAccuracy = L.circle(latLng, {radius: position.coords.accuracy, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.1, weight: 1}).addTo(map);
-        map.setView(latLng, 18);
-        setStatus('Your location is shown on the map.', 'success');
-      }, function() {
-        setStatus('Location permission was unavailable.', 'danger');
-      }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 30000});
-    });
+  let locationRequestInProgress = false;
+  const locateLabel = locateButton ? locateButton.querySelector('.locate-label') : null;
+  const defaultLocateLabel = locateLabel ? locateLabel.textContent : 'Detect My Location';
+
+  const distanceBetween = function(firstLat, firstLng, secondLat, secondLng) {
+    const earthRadius = 6371;
+    const toRadians = function(value) { return value * Math.PI / 180; };
+    const latDelta = toRadians(secondLat - firstLat);
+    const lngDelta = toRadians(secondLng - firstLng);
+    const a = Math.sin(latDelta / 2) ** 2
+      + Math.cos(toRadians(firstLat)) * Math.cos(toRadians(secondLat)) * Math.sin(lngDelta / 2) ** 2;
+    return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const setLocateLoading = function(isLoading) {
+    if (!locateButton) return;
+    locateButton.disabled = isLoading;
+    locateButton.setAttribute('aria-busy', String(isLoading));
+    if (locateLabel) locateLabel.textContent = isLoading ? 'Detecting location...' : defaultLocateLabel;
+  };
+
+  const locationErrorMessage = function(error) {
+    if (!error || typeof error.code !== 'number') {
+      return 'Your location could not be detected. Please check your GPS/location services.';
+    }
+    if (error.code === 1) return 'Location permission was denied. Please allow location access from your browser settings.';
+    if (error.code === 2) return 'Your location could not be detected. Please check your GPS/location services.';
+    if (error.code === 3) return 'Location detection timed out. Please try again.';
+    return 'Your location could not be detected. Please check your GPS/location services.';
+  };
+
+  const detectLocation = function() {
+    if (!locateButton || locationRequestInProgress) return;
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      setStatus('Location detection requires an HTTPS connection.', 'danger');
+      return;
+    }
+    if (!navigator.geolocation) {
+      locateButton.disabled = true;
+      setStatus('Location detection is not supported by this browser.', 'danger');
+      return;
+    }
+
+    locationRequestInProgress = true;
+    setLocateLoading(true);
+    setStatus('Detecting your location...', 'primary');
+    navigator.geolocation.getCurrentPosition(function(position) {
+      const coords = position && position.coords;
+      const latitude = coords && Number(coords.latitude);
+      const longitude = coords && Number(coords.longitude);
+      const accuracy = coords && Number(coords.accuracy);
+      const validCoordinates = Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+        && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+        && Number.isFinite(accuracy) && accuracy > 0;
+
+      if (!validCoordinates) {
+        setStatus('Your location could not be detected. Please check your GPS/location services.', 'danger');
+        locationRequestInProgress = false;
+        setLocateLoading(false);
+        return;
+      }
+
+      const latLng = [latitude, longitude];
+      if (userMarker) map.removeLayer(userMarker);
+      if (userAccuracy) map.removeLayer(userAccuracy);
+      userAccuracy = L.circle(latLng, {
+        radius: accuracy,
+        color: '#2563eb',
+        fillColor: '#2563eb',
+        fillOpacity: 0.1,
+        weight: 1
+      }).addTo(map);
+      userMarker = L.circleMarker(latLng, {
+        radius: 8,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: '#2563eb',
+        fillOpacity: 1
+      }).addTo(map).bindPopup(`Your current location (accuracy: ${Math.round(accuracy)} m)`);
+      map.setView(latLng, Math.max(map.getZoom(), 16));
+
+      const distance = distanceBetween(latitude, longitude, initialLat, initialLng);
+      if (accuracy > 1000) {
+        setStatus(`Your location was detected, but accuracy is low. Please enable GPS and try again. Distance to station: ${distance.toFixed(2)} km.`, 'warning');
+      } else {
+        setStatus(`Location detected (accuracy: ${Math.round(accuracy)} m). Distance to station: ${distance.toFixed(2)} km.`, 'success');
+      }
+      locationRequestInProgress = false;
+      setLocateLoading(false);
+    }, function(error) {
+      setStatus(locationErrorMessage(error), 'danger');
+      locationRequestInProgress = false;
+      setLocateLoading(false);
+    }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
+  };
+
+  if (locateButton) {
+    locateButton.addEventListener('click', detectLocation);
+    if (!navigator.geolocation) {
+      locateButton.disabled = true;
+      setStatus('Location detection is not supported by this browser.', 'danger');
+    }
   }
 
   const refresh = function() {
