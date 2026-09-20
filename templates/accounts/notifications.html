@@ -3,7 +3,6 @@
 {% block title %}Notifications — RailSaathi{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -30,7 +29,6 @@
             {% if notif.link_url %}
               <a href="{{ notif.link_url }}" class="btn btn-sm btn-rs-outline">View Details</a>
             {% endif %}
-=======
 <div class="container py-4" style="max-width: 780px;">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -101,21 +99,14 @@
                 </a>
               {% endif %}
             </div>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
           </div>
         {% endfor %}
       </div>
     {% else %}
       <div class="text-center py-5 text-muted">
-<<<<<<< HEAD
-        <i class="fas fa-bell-slash fs-1 text-secondary mb-3"></i>
-        <h5>No Notifications Yet</h5>
-        <p class="small">We'll alert you here when your coolie accepts a booking or your assistance request status updates.</p>
-=======
         <i class="fas fa-bell-slash fs-1 text-secondary mb-3 d-block"></i>
         <h5>No Notifications Yet</h5>
         <p class="small">We'll alert you here when your coolie accepts a booking or your assistance request updates.</p>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
       </div>
     {% endif %}
   </div>

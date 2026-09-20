@@ -1,26 +1,20 @@
 {% extends 'admin_portal/base_admin.html' %}
 
 {% block admin_content %}
-<<<<<<< HEAD
 <div class="mb-4">
   <h3 class="fw-bold mb-1">Ratings & Reviews</h3>
   <p class="text-muted small">All coolie reviews submitted by passengers</p>
-=======
 <div class="mb-4 d-flex justify-content-between align-items-center">
   <div>
     <h3 class="fw-bold mb-1">Ratings & Reviews</h3>
     <p class="text-muted small mb-0">All coolie reviews submitted by passengers</p>
   </div>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 </div>
 
 <div class="rs-card p-4">
   <div class="table-responsive">
-<<<<<<< HEAD
     <table class="table table-hover align-middle mb-0 small">
-=======
     <table class="table table-hover align-middle small mb-0">
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
       <thead class="table-light">
         <tr>
           <th>Booking ID</th>
@@ -34,7 +28,6 @@
         </tr>
       </thead>
       <tbody>
-<<<<<<< HEAD
         {% for r in reviews %}
           <tr>
             <td><span class="badge bg-secondary">{{ r.booking.booking_id }}</span></td>
@@ -52,7 +45,6 @@
           </tr>
         {% empty %}
           <tr><td colspan="8" class="text-center text-muted py-4">No reviews yet.</td></tr>
-=======
         {% for review in reviews %}
           <tr>
             <td class="fw-bold">#{{ review.booking.booking_id }}</td>
@@ -73,7 +65,6 @@
           <tr>
             <td colspan="8" class="text-center text-muted py-4">No reviews submitted yet.</td>
           </tr>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
         {% endfor %}
       </tbody>
     </table>

@@ -63,17 +63,14 @@
             <a href="{% url 'accounts:notifications' %}" class="btn btn-rs-outline position-relative py-2 px-3">
               <i class="fas fa-bell"></i>
               {% if unread_notifications_count > 0 %}
-<<<<<<< HEAD
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                   {{ unread_notifications_count }}
                 </span>
-=======
                 <span class="notif-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                   {{ unread_notifications_count }}
                 </span>
               {% else %}
                 <span class="notif-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
               {% endif %}
             </a>
 
@@ -102,9 +99,7 @@
               </button>
               <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4">
                 <li><h6 class="dropdown-header">{{ user.get_role_display|default:"Passenger" }}</h6></li>
-<<<<<<< HEAD
                 <li><a class="dropdown-item" href="{% url 'accounts:passenger_dashboard' %}"><i class="fas fa-columns me-2 text-muted"></i> Dashboard</a></li>
-=======
                 <li>
                   {% if is_station_admin %}
                     <a class="dropdown-item" href="{% url 'admin_portal:dashboard' %}"><i class="fas fa-columns me-2 text-muted"></i> Dashboard</a>
@@ -114,7 +109,6 @@
                     <a class="dropdown-item" href="{% url 'accounts:passenger_dashboard' %}"><i class="fas fa-columns me-2 text-muted"></i> Dashboard</a>
                   {% endif %}
                 </li>
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
                 <li><a class="dropdown-item" href="{% url 'bookings:history' %}"><i class="fas fa-history me-2 text-muted"></i> Booking History</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
@@ -159,8 +153,6 @@
     {% block content %}{% endblock %}
   </main>
 
-<<<<<<< HEAD
-=======
   {% if user.is_authenticated %}
     <aside class="rs-assistant" aria-label="RailSaathi station assistant">
       <button class="rs-assistant-toggle" type="button" aria-expanded="false" aria-controls="assistantPanel">
@@ -181,7 +173,6 @@
     </aside>
   {% endif %}
 
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   <!-- Footer -->
   <footer class="bg-white border-top mt-5 py-5">
     <div class="container">

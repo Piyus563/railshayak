@@ -1,11 +1,8 @@
 from decimal import Decimal
-<<<<<<< HEAD
 from django.test import TestCase, Client
-=======
 from unittest.mock import Mock, patch
 from django.test import TestCase, Client
 from django.test import override_settings
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 from django.urls import reverse
 from django.utils import timezone
 
@@ -91,8 +88,6 @@ class RailSaathiCoreTests(TestCase):
         response = self.client.get(reverse('accounts:passenger_dashboard'))
         self.assertEqual(response.status_code, 200)
 
-<<<<<<< HEAD
-=======
     @override_settings(TWILIO_WHATSAPP_ENABLED=False, TWILIO_ACCOUNT_SID='AC123', TWILIO_AUTH_TOKEN='token123')
     @patch('bookings.whatsapp.Client')
     def test_01b_whatsapp_skips_when_disabled(self, mock_client_class):
@@ -116,7 +111,6 @@ class RailSaathiCoreTests(TestCase):
         self.assertEqual(result.status_code, 302)
         message_client.messages.create.assert_not_called()
 
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     def test_02_coolie_availability_toggle(self):
         """Test coolie going online and offline"""
         self.client.login(username="coolie_test", password="cooliepassword")
@@ -152,8 +146,6 @@ class RailSaathiCoreTests(TestCase):
         self.assertEqual(booking.status, 'REQUESTED')
         self.assertEqual(booking.total_fare, Decimal('200.00'))
 
-<<<<<<< HEAD
-=======
     @override_settings(RAZORPAY_KEY_ID='rzp_test_key', RAZORPAY_KEY_SECRET='test_secret')
     @patch('bookings.views._razorpay_client')
     def test_04_payment_verification_confirms_once(self, client_factory):
@@ -227,7 +219,6 @@ class RailSaathiCoreTests(TestCase):
         self.assertEqual(booking.payment_status, 'FAILED')
         self.assertNotEqual(booking.status, 'COMPLETED')
 
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
     def test_04_coolie_booking_workflow_state_transitions(self):
         """Test full state machine: REQUESTED -> ACCEPTED -> SERVICE_STARTED -> COMPLETED"""
         booking = Booking.objects.create(
@@ -350,7 +341,6 @@ class RailSaathiCoreTests(TestCase):
         self.assertEqual(resp_charts.status_code, 200)
         self.assertIn('daily_bookings', resp_charts.json())
 
-<<<<<<< HEAD
         for endpoint in ('assistance', 'lost-found', 'complaints'):
             response = self.client.post(f'/api/v1/{endpoint}/', {})
             self.assertEqual(response.status_code, 403)
@@ -376,7 +366,6 @@ class RailSaathiCoreTests(TestCase):
         map_data = self.client.get('/api/v1/stations/NJP/map_data/')
         self.assertEqual(map_data.status_code, 200)
         self.assertEqual(len(map_data.json()['platforms']), 1)
-=======
     def test_10_ai_assistant_and_recommendations(self):
         self.client.login(username="passenger_test", password="passpassword")
 
@@ -397,4 +386,3 @@ class RailSaathiCoreTests(TestCase):
         recommendation_response = self.client.get(reverse('accounts:coolie_recommendations'))
         self.assertEqual(chat_response.status_code, 302)
         self.assertEqual(recommendation_response.status_code, 302)
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

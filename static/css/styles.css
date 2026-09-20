@@ -176,23 +176,18 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   border-radius: var(--rs-radius-lg);
   box-shadow: var(--rs-shadow-md);
   transition: var(--rs-transition);
-<<<<<<< HEAD
   overflow: hidden;
 }
 
 .rs-card:hover {
-=======
 }
 
 .rs-card:not(:has(#station-map)):hover {
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   box-shadow: var(--rs-shadow-lg);
   transform: translateY(-3px);
   border-color: #cbd5e1;
 }
 
-<<<<<<< HEAD
-=======
 .rs-assistant {
   position: fixed;
   right: 1.25rem;
@@ -229,7 +224,6 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   .rs-assistant { right: 1rem; bottom: 1rem; }
 }
 
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 .rs-card-interactive {
   cursor: pointer;
 }
@@ -405,17 +399,11 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 /* Map Styling */
 #station-map {
   width: 100%;
-<<<<<<< HEAD
-  height: 520px;
-=======
   height: 560px;
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
   border-radius: var(--rs-radius-lg);
   border: 1px solid var(--rs-border);
   box-shadow: var(--rs-shadow-md);
   z-index: 1;
-<<<<<<< HEAD
-=======
   display: block;
 }
 
@@ -426,7 +414,6 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 
 .leaflet-tile-pane {
   opacity: 1 !important;
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 }
 
 .map-control-card {

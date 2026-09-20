@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # RailShayak
 
 RailShayak is a Django-based railway assistance and management platform designed to support passengers, station staff, coolies, and administrators. The project includes booking management, complaints, lost and found tracking, notifications, station information, account management, and admin analytics.
@@ -119,7 +118,6 @@ This repository is intended as a railway service management app and may be expan
 ## License
 
 This project is for educational and project demonstration purposes unless a separate license is added by the repository owner.
-=======
 # RailSaathi
 
 RailSaathi is a Django + Django REST Framework platform for railway station assistance: verified coolie booking, live booking status, station maps and facilities, passenger assistance, lost and found, complaints, role-based dashboards, analytics, and a local AI station assistant.
@@ -186,4 +184,3 @@ python manage.py test
 ```
 
 The recommendation engine is intentionally explainable and local: it ranks verified online coolies by rating, experience, current platform, luggage fit, and accessibility. The `scikit-learn` dependency is included for extending this baseline with trained station-demand models without requiring an external AI provider for the demo.
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)

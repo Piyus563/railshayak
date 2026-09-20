@@ -65,8 +65,6 @@ document.addEventListener('DOMContentLoaded', function() {
       bsAlert.close();
     }, 6000);
   });
-<<<<<<< HEAD
-=======
 
   const assistantToggle = document.querySelector('.rs-assistant-toggle');
   const assistantPanel = document.querySelector('.rs-assistant-panel');
@@ -131,5 +129,4 @@ document.addEventListener('DOMContentLoaded', function() {
     pollNotifications();
     setInterval(pollNotifications, 30000);
   }
->>>>>>> dd5170b (Initial RailSaathi deployment-ready commit)
 });
