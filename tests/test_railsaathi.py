@@ -169,6 +169,7 @@ class RailSaathiCoreTests(TestCase):
 
         create_response = self.client.post(reverse('bookings:create_payment', args=[booking.booking_id]))
         self.assertEqual(create_response.status_code, 200)
+        self.assertEqual(create_response.json()['key_id'], 'rzp_test_key')
         booking.refresh_from_db()
         self.assertEqual(booking.razorpay_order_id, 'order_test_123')
         self.assertEqual(booking.payment_amount, Decimal('150.00'))
@@ -218,6 +219,44 @@ class RailSaathiCoreTests(TestCase):
         booking.refresh_from_db()
         self.assertEqual(booking.payment_status, 'FAILED')
         self.assertNotEqual(booking.status, 'COMPLETED')
+
+    @override_settings(RAZORPAY_KEY_ID='', RAZORPAY_KEY_SECRET='')
+    def test_06_missing_payment_keys_keep_booking_pending(self):
+        booking = Booking.objects.create(
+            passenger=self.passenger_user,
+            station=self.station,
+            platform=self.platform1,
+            total_fare=Decimal('100.00'),
+            payment_status='PENDING',
+        )
+        self.client.login(username='passenger_test', password='passpassword')
+
+        response = self.client.post(reverse('bookings:create_payment', args=[booking.booking_id]))
+
+        self.assertEqual(response.status_code, 503)
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, 'PENDING')
+
+    @override_settings(RAZORPAY_KEY_ID='rzp_test_key', RAZORPAY_KEY_SECRET='test_secret')
+    @patch('bookings.views._razorpay_client')
+    def test_07_order_creation_failure_keeps_booking_pending(self, client_factory):
+        booking = Booking.objects.create(
+            passenger=self.passenger_user,
+            station=self.station,
+            platform=self.platform1,
+            total_fare=Decimal('100.00'),
+            payment_status='PENDING',
+        )
+        gateway = Mock()
+        gateway.order.create.side_effect = RuntimeError('gateway unavailable')
+        client_factory.return_value = gateway
+        self.client.login(username='passenger_test', password='passpassword')
+
+        response = self.client.post(reverse('bookings:create_payment', args=[booking.booking_id]))
+
+        self.assertEqual(response.status_code, 502)
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, 'PENDING')
 
     def test_04_coolie_booking_workflow_state_transitions(self):
         """Test full state machine: REQUESTED -> ACCEPTED -> SERVICE_STARTED -> COMPLETED"""

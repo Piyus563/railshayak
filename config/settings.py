@@ -6,7 +6,11 @@ import os
 import importlib.util
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 # Security settings
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-key')
@@ -197,7 +201,7 @@ LOGIN_REDIRECT_URL = 'accounts:dashboard_redirect'
 LOGOUT_REDIRECT_URL = 'landing'
 
 # Twilio WhatsApp
-TWILIO_WHATSAPP_ENABLED = os.environ.get('TWILIO_WHATSAPP_ENABLED', 'False').lower() in ('true', '1', 't', 'yes', 'y')
+TWILIO_WHATSAPP_ENABLED = os.environ.get('TWILIO_WHATSAPP_ENABLED', 'True').lower() in ('true', '1', 't', 'yes', 'y')
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')

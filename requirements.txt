@@ -10,5 +10,6 @@ gunicorn>=23.0,<24.0
 whitenoise>=6.9,<7.0
 scikit-learn>=1.5,<2.0
 twilio>=9.0,<10.0
+python-dotenv>=1.0,<2.0
 django-allauth>=65.0
 razorpay>=2.0,<3.0

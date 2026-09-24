@@ -407,6 +407,36 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   display: block;
 }
 
+.map-toolbar {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  left: 52px;
+  width: min(360px, calc(100% - 68px));
+}
+
+.map-toolbar .list-group {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.map-nearest-select {
+  width: auto;
+  min-width: 190px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .75rem;
+}
+
+@media (max-width: 575.98px) {
+  #station-map { height: 68vh; min-height: 420px; }
+  .map-toolbar { left: 52px; width: calc(100% - 68px); }
+  .map-nearest-select { flex: 1 1 180px; }
+}
+
 .leaflet-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
   border-radius: var(--rs-radius-lg);

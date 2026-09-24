@@ -33,11 +33,28 @@
     <div class="col-lg-9">
       <div class="rs-card p-2 bg-white shadow-lg position-relative">
         <div id="station-map"></div>
+        <div class="map-toolbar p-2">
+          <label class="visually-hidden" for="map-search">Search station map</label>
+          <input id="map-search" class="form-control form-control-sm" type="search" placeholder="Search platforms or facilities..." autocomplete="off">
+          <div id="map-search-results" class="list-group shadow-sm" hidden></div>
+        </div>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-2 pt-2">
           <span id="map-status" class="small text-muted" role="status" aria-live="polite">Loading live station data...</span>
           <button id="locate-me" type="button" class="btn btn-sm btn-outline-primary">
             <i class="fas fa-location-crosshairs me-1"></i><span class="locate-label">Detect My Location</span>
           </button>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 px-2 pb-2 pt-2">
+          <label class="small fw-semibold mb-0" for="nearest-type">Find nearest</label>
+          <select id="nearest-type" class="form-select form-select-sm map-nearest-select">
+            <option value="WASHROOM">Nearest Washroom</option>
+            <option value="LIFT">Nearest Lift</option>
+            <option value="MEDICAL">Nearest Medical</option>
+            <option value="DRINKING_WATER">Nearest Drinking Water</option>
+            <option value="HELP_DESK">Nearest Help Desk</option>
+            <option value="COOLIE_PICKUP">Nearest Coolie Pickup</option>
+          </select>
+          <button id="find-nearest" type="button" class="btn btn-sm btn-outline-secondary">Find Nearest</button>
         </div>
       </div>
     </div>
@@ -51,6 +68,11 @@
           <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
             <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="ALL" checked>
             <span class="fw-bold">Show All Facilities</span>
+          </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="PLATFORM" checked>
+            <span>🚉 Platforms</span>
           </label>
 
           <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
@@ -97,6 +119,16 @@
             <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="WHEELCHAIR_POINT" checked>
             <span>♿ Wheelchair Pick-up Hub</span>
           </label>
+
+          <label class="d-flex align-items-center gap-2 p-2 bg-light rounded-3 cursor-pointer">
+            <input type="checkbox" class="facility-filter-checkbox form-check-input mt-0" value="COOLIE_PICKUP" checked>
+            <span>🧳 Coolie Pickup</span>
+          </label>
+        </div>
+        <div class="map-legend small mt-3 pt-3 border-top">
+          <div class="fw-bold mb-2">Map legend</div>
+          <span>🚉 Station</span><span>🚻 Washroom</span><span>💧 Water</span><span>🛗 Lift</span>
+          <span>🏥 Medical</span><span>ℹ️ Help Desk</span><span>♿ Wheelchair</span><span>🧳 Coolie Pickup</span>
         </div>
       </div>
     </div>
@@ -116,6 +148,7 @@
     const stationData = JSON.parse(document.getElementById('station-data').textContent || '{}');
 
     initStationMap('station-map', stationData.latitude, stationData.longitude, stationData.name, facilitiesData, platformsData, {
+      stationCode: '{{ station.code|escapejs }}',
       dataUrl: '{% url "api_stations-map-data" station.code %}',
       statusElementId: 'map-status',
       locateButtonId: 'locate-me'

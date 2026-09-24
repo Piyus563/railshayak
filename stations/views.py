@@ -1,6 +1,5 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
-from django.http import JsonResponse
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -72,8 +71,8 @@ def station_map_view(request, code=None):
             'facility_type': f.facility_type,
             'facility_type_display': f.get_facility_type_display(),
             'location_description': f.location_description,
-            'latitude': float(f.latitude) if f.latitude else float(station.latitude),
-            'longitude': float(f.longitude) if f.longitude else float(station.longitude),
+            'latitude': float(f.latitude) if f.latitude is not None else None,
+            'longitude': float(f.longitude) if f.longitude is not None else None,
             'contact_number': f.contact_number or '',
             'is_operational': f.is_operational,
         }
@@ -84,8 +83,8 @@ def station_map_view(request, code=None):
         {
             'number': p.number,
             'description': p.description,
-            'latitude': float(p.latitude) if p.latitude else float(station.latitude),
-            'longitude': float(p.longitude) if p.longitude else float(station.longitude),
+            'latitude': float(p.latitude) if p.latitude is not None else None,
+            'longitude': float(p.longitude) if p.longitude is not None else None,
         }
         for p in platforms
     ]
@@ -116,15 +115,15 @@ class StationViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def map_data(self, request, code=None):
         station = self.get_object()
-        facilities = FacilitySerializer(station.facilities.filter(is_operational=True), many=True).data
+        facilities = FacilitySerializer(station.facilities.all(), many=True).data
         platforms = PlatformSerializer(station.platforms.all(), many=True).data
         return Response({
             'station': {
                 'id': station.id,
                 'name': station.name,
                 'code': station.code,
-                'latitude': float(station.latitude),
-                'longitude': float(station.longitude),
+                'latitude': float(station.latitude) if station.latitude is not None else None,
+                'longitude': float(station.longitude) if station.longitude is not None else None,
             },
             'platforms': platforms,
             'facilities': facilities

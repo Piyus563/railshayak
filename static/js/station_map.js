@@ -1,323 +1,123 @@
-/**
- * RailSaathi Interactive Leaflet.js Station Map
- */
-
 function initStationMap(mapElementId, stationLat, stationLng, stationName, facilitiesData, platformsData, options) {
-  const mapElem = document.getElementById(mapElementId);
-  if (!mapElem) return;
-
+  const element = document.getElementById(mapElementId);
+  if (!element) return null;
+  if (element._railsaathiMap) return element._railsaathiMap;
   options = options || {};
-  const statusElement = document.getElementById(options.statusElementId || 'map-status');
-  const setStatus = function(message, type) {
-    if (!statusElement) return;
-    statusElement.textContent = message;
-    statusElement.className = `small text-${type || 'muted'}`;
+  const status = document.getElementById(options.statusElementId || 'map-status');
+  const setStatus = (message, type) => {
+    if (!status) return;
+    status.textContent = message;
+    status.className = `small text-${type || 'muted'}`;
   };
-
-  if (typeof L === 'undefined') {
-    mapElem.innerHTML = '<div class="alert alert-danger m-3">The map library could not be loaded. Please check your internet connection and reload.</div>';
-    setStatus('Map library unavailable.', 'danger');
-    return;
-  }
-
-  const initialLat = parseFloat(stationLat);
-  const initialLng = parseFloat(stationLng);
-  if (!Number.isFinite(initialLat) || !Number.isFinite(initialLng)) {
-    mapElem.innerHTML = '<div class="alert alert-danger m-3">Station location is not available.</div>';
-    setStatus('Station coordinates unavailable.', 'danger');
-    return;
-  }
-
-  // Initialize map centered at station coordinates
-  const map = L.map(mapElementId, {
-    center: [initialLat, initialLng],
-    zoom: 18,
-    zoomControl: true,
-    scrollWheelZoom: false
-  });
-
-  // Add OpenStreetMap tile layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | RailSaathi Smart Station Map',
-    maxZoom: 20
-  }).addTo(map);
-
-  // Custom Icon Factory
-  function createCustomIcon(iconClass, bgGradient) {
-    return L.divIcon({
-      className: 'custom-leaflet-marker',
-      html: `<div style="
-        width: 38px;
-        height: 38px;
-        background: ${bgGradient};
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ffffff;
-        font-size: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        border: 2px solid #ffffff;
-      "><i class="${iconClass}"></i></div>`,
-      iconSize: [38, 38],
-      iconAnchor: [19, 19],
-      popupAnchor: [0, -20]
-    });
-  }
-
-  // Color mappings by facility type
-  const iconConfig = {
-    'WASHROOM': { icon: 'fas fa-restroom', bg: 'linear-gradient(135deg, #0284c7, #0369a1)' },
-    'DRINKING_WATER': { icon: 'fas fa-tint', bg: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
-    'LIFT': { icon: 'fas fa-elevator', bg: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-    'ESCALATOR': { icon: 'fas fa-walking', bg: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
-    'FOOD': { icon: 'fas fa-utensils', bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-    'WAITING_ROOM': { icon: 'fas fa-couch', bg: 'linear-gradient(135deg, #10b981, #059669)' },
-    'PARKING': { icon: 'fas fa-car', bg: 'linear-gradient(135deg, #64748b, #475569)' },
-    'MEDICAL': { icon: 'fas fa-hospital', bg: 'linear-gradient(135deg, #ef4444, #dc2626)' },
-    'HELP_DESK': { icon: 'fas fa-info-circle', bg: 'linear-gradient(135deg, #0f2b48, #1e40af)' },
-    'CLOAK_ROOM': { icon: 'fas fa-luggage-cart', bg: 'linear-gradient(135deg, #d946ef, #a21caf)' },
-    'WHEELCHAIR_POINT': { icon: 'fas fa-wheelchair', bg: 'linear-gradient(135deg, #2563eb, #1d4ed8)' },
+  const coordinates = (latitude, longitude) => {
+    const lat = Number(latitude); const lng = Number(longitude);
+    return Number.isFinite(lat) && lat >= -90 && lat <= 90 && Number.isFinite(lng) && lng >= -180 && lng <= 180 ? [lat, lng] : null;
   };
+  const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+  if (typeof L === 'undefined') { setStatus('Map library unavailable.', 'danger'); return null; }
+  const stationPosition = coordinates(stationLat, stationLng);
+  if (!stationPosition) { element.innerHTML = '<div class="alert alert-warning m-3">Station coordinates are unavailable.</div>'; setStatus('Station coordinates unavailable.', 'danger'); return null; }
 
-  const markersGroup = L.layerGroup().addTo(map);
-  let allMarkers = [];
+  const map = L.map(mapElementId, { center: stationPosition, zoom: 16, scrollWheelZoom: false });
+  element._railsaathiMap = map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors | RailSaathi', maxZoom: 20 }).addTo(map);
+  const markerGroup = L.layerGroup().addTo(map);
+  const stationGroup = L.layerGroup().addTo(map);
+  const markers = [];
+  let userPosition = null;
   let userMarker = null;
-  let userAccuracy = null;
-
-  const escapeHtml = function(value) {
-    return String(value == null ? '' : value).replace(/[&<>'"]/g, function(character) {
-      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[character];
-    });
+  let accuracyCircle = null;
+  let routeLine = null;
+  const icons = {
+    WASHROOM: ['fas fa-restroom', '#0284c7'], DRINKING_WATER: ['fas fa-tint', '#0891b2'], LIFT: ['fas fa-elevator', '#6d28d9'], ESCALATOR: ['fas fa-walking', '#4f46e5'], FOOD: ['fas fa-utensils', '#d97706'], WAITING_ROOM: ['fas fa-couch', '#059669'], PARKING: ['fas fa-car', '#475569'], MEDICAL: ['fas fa-hospital', '#dc2626'], HELP_DESK: ['fas fa-info-circle', '#1d4ed8'], CLOAK_ROOM: ['fas fa-luggage-cart', '#a21caf'], WHEELCHAIR_POINT: ['fas fa-wheelchair', '#1d4ed8'], COOLIE_PICKUP: ['fas fa-luggage-cart', '#b45309'], PLATFORM: ['fas fa-subway', '#f59e0b']
   };
+  const iconFor = type => {
+    const config = icons[type] || ['fas fa-location-dot', '#2563eb'];
+    return L.divIcon({ className: 'custom-leaflet-marker', html: `<div style="width:34px;height:34px;background:${config[1]};border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.25)"><i class="${config[0]}"></i></div>`, iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -18] });
+  };
+  const distanceKm = (a, b) => {
+    const radians = value => value * Math.PI / 180; const lat = radians(b[0] - a[0]); const lng = radians(b[1] - a[1]);
+    const part = Math.sin(lat / 2) ** 2 + Math.cos(radians(a[0])) * Math.cos(radians(b[0])) * Math.sin(lng / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(part), Math.sqrt(1 - part));
+  };
+  const distanceText = km => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+  const navigate = marker => {
+    if (!userPosition) { setStatus('Enable location before navigating to a marker.', 'warning'); return; }
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline([userPosition, marker.getLatLng()], { color: '#2563eb', weight: 4, dashArray: '8 8' }).addTo(map);
+    map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+    setStatus(`Straight-line distance: ${distanceText(distanceKm(userPosition, marker.getLatLng()))}. Road routing is not enabled.`, 'primary');
+  };
+  const navigateButton = id => `<button type="button" class="btn btn-sm btn-outline-primary map-navigate" data-marker-id="${id}">Navigate Here</button>`;
+  const stationMarker = L.marker(stationPosition, { icon: iconFor('STATION') }).addTo(stationGroup);
+  stationMarker.bindPopup(`<strong>🚉 ${escapeHtml(stationName)}</strong><br><span class="small">Station location</span>`);
 
-  // Add Station Central Marker
-  const mainStationIcon = L.divIcon({
-    className: 'station-main-marker',
-    html: `<div style="
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #0f2b48, #2563eb);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-size: 22px;
-      box-shadow: 0 6px 18px rgba(15, 43, 72, 0.4);
-      border: 3px solid #ffffff;
-    "><i class="fas fa-train"></i></div>`,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
-    popupAnchor: [0, -25]
-  });
-
-  const mainMarker = L.marker([initialLat, initialLng], { icon: mainStationIcon }).addTo(map);
-  mainMarker.bindPopup(`
-    <div style="padding: 6px; min-width: 180px;">
-      <h6 style="margin: 0 0 4px 0; color: #0f2b48; font-weight: 700;">🚆 ${escapeHtml(stationName)}</h6>
-      <p style="margin: 0; font-size: 12px; color: #64748b;">Central Concourse & Porch</p>
-    </div>
-  `);
-
-  function createPlatformIcon() {
-    return L.divIcon({
-      className: 'platform-leaflet-marker',
-      html: '<div style="width:32px;height:32px;background:#f59e0b;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.25)"><i class="fas fa-subway"></i></div>',
-      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -16]
+  const applyFilters = () => {
+    const checked = new Set(Array.from(document.querySelectorAll('.facility-filter-checkbox:checked')).map(input => input.value));
+    markers.forEach(item => { if (checked.has('ALL') || checked.has(item.type)) markerGroup.addLayer(item.marker); else markerGroup.removeLayer(item.marker); });
+  };
+  const renderLayers = (facilities, platforms) => {
+    markerGroup.clearLayers(); markers.length = 0;
+    (Array.isArray(platforms) ? platforms : []).forEach(platform => {
+      const position = coordinates(platform.latitude, platform.longitude); if (!position) return;
+      const marker = L.marker(position, { icon: iconFor('PLATFORM') }); const id = `platform-${platform.id || platform.number}`;
+      marker.bindPopup(`<strong>🚉 Platform ${escapeHtml(platform.number)}</strong><br>${escapeHtml(platform.description || 'Platform information')}<br><span class="small">Verified location</span><br>${navigateButton(id)}`);
+      markers.push({ marker, type: 'PLATFORM', name: `Platform ${platform.number}`, search: `platform ${platform.number} ${platform.description || ''}`, id });
     });
-  }
-
-  function renderLayers(nextFacilities, nextPlatforms) {
-    markersGroup.clearLayers();
-    allMarkers = [];
-
-    (Array.isArray(nextPlatforms) ? nextPlatforms : []).forEach(function(platform) {
-      const lat = parseFloat(platform.latitude);
-      const lng = parseFloat(platform.longitude);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      const marker = L.marker([lat, lng], {icon: createPlatformIcon()});
-      marker.facilityType = 'PLATFORM';
-      marker.bindPopup(`<strong>Platform ${escapeHtml(platform.number)}</strong><br>${escapeHtml(platform.description || 'Platform information')}`);
-      marker.addTo(markersGroup);
-    });
-
-    (Array.isArray(nextFacilities) ? nextFacilities : []).forEach(function(facility) {
-      const type = facility.facility_type;
-      const conf = iconConfig[type] || { icon: 'fas fa-map-marker-alt', bg: 'linear-gradient(135deg, #2563eb, #1d4ed8)' };
-      const icon = createCustomIcon(conf.icon, conf.bg);
-
-      const lat = parseFloat(facility.latitude);
-      const lng = parseFloat(facility.longitude);
-
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        const marker = L.marker([lat, lng], { icon: icon });
-        const popupContent = `
-          <div style="padding: 8px; min-width: 200px;">
-            <div style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">
-              ${escapeHtml(facility.facility_type_display || type)}
-            </div>
-            <h6 style="margin: 0 0 6px 0; font-weight: 700; color: #0f2b48;">${escapeHtml(facility.name)}</h6>
-            <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">${escapeHtml(facility.location_description)}</p>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 6px;">
-              <span style="font-size: 11px; color: ${facility.is_operational === false ? '#dc2626' : '#10b981'}; font-weight: 600;"><i class="fas ${facility.is_operational === false ? 'fa-times-circle' : 'fa-check-circle'} me-1"></i>${facility.is_operational === false ? 'Maintenance' : 'Operational'}</span>
-              ${facility.contact_number ? `<a href="tel:${escapeHtml(facility.contact_number)}" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px;">Call ${escapeHtml(facility.contact_number)}</a>` : ''}
-            </div>
-          </div>
-        `;
-        marker.bindPopup(popupContent);
-        marker.facilityType = type;
-        markersGroup.addLayer(marker);
-        allMarkers.push(marker);
-      }
+    (Array.isArray(facilities) ? facilities : []).forEach(facility => {
+      const position = coordinates(facility.latitude, facility.longitude); if (!position) return;
+      const type = facility.facility_type || 'FACILITY'; const id = `facility-${facility.id}`; const state = facility.is_operational === false ? 'Maintenance' : 'Open';
+      const distance = userPosition ? `<br><span class="small">Distance: ${distanceText(distanceKm(userPosition, position))}</span>` : '';
+      const booking = type === 'COOLIE_PICKUP' ? `<br><a class="btn btn-sm btn-outline-warning mt-2" href="/bookings/book/?station=${encodeURIComponent(options.stationCode || stationName)}">Book Coolie</a>` : '';
+      const marker = L.marker(position, { icon: iconFor(type) });
+      marker.bindPopup(`<strong>${escapeHtml(facility.facility_type_display || type)}</strong><h6>${escapeHtml(facility.name)}</h6><div class="small">${escapeHtml(facility.location_description || '')}</div><div class="small text-${facility.is_operational === false ? 'danger' : 'success'}">Status: ${state}</div>${distance}<br>${navigateButton(id)}${booking}`);
+      markers.push({ marker, type, name: facility.name, search: `${facility.name} ${facility.facility_type_display || type} ${facility.location_description || ''}`, id });
     });
     applyFilters();
-  }
-
-  function applyFilters() {
-    const checkedTypes = Array.from(document.querySelectorAll('.facility-filter-checkbox:checked')).map(c => c.value);
-    const showAll = checkedTypes.includes('ALL');
-    allMarkers.forEach(function(marker) {
-      if (showAll || checkedTypes.includes(marker.facilityType)) markersGroup.addLayer(marker);
-      else markersGroup.removeLayer(marker);
-    });
-  }
-
+    const bounds = L.latLngBounds([stationPosition].concat(markers.map(item => item.marker.getLatLng())));
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
+    setStatus(markers.length ? `Map ready. ${markers.length} verified locations loaded.` : 'Map ready. No platform or facility coordinates are available.', markers.length ? 'success' : 'warning');
+  };
   renderLayers(facilitiesData, platformsData);
+  document.querySelectorAll('.facility-filter-checkbox').forEach(input => input.addEventListener('change', () => {
+    if (input.value === 'ALL' && input.checked) document.querySelectorAll('.facility-filter-checkbox').forEach(item => { item.checked = true; });
+    if (input.value !== 'ALL' && !input.checked) { const all = document.querySelector('.facility-filter-checkbox[value="ALL"]'); if (all) all.checked = false; }
+    applyFilters();
+  }));
+  element.addEventListener('click', event => { const button = event.target.closest('.map-navigate'); const item = button && markers.find(entry => entry.id === button.dataset.markerId); if (item) navigate(item.marker); });
 
-  // Filter Event Listeners
-  const filterCheckboxes = document.querySelectorAll('.facility-filter-checkbox');
-  filterCheckboxes.forEach(function(cb) {
-    cb.addEventListener('change', function() {
-      if (cb.value === 'ALL' && cb.checked) {
-        document.querySelectorAll('.facility-filter-checkbox').forEach(c => c.checked = true);
-      } else if (cb.value !== 'ALL' && !cb.checked) {
-        const allCheckbox = document.querySelector('.facility-filter-checkbox[value="ALL"]');
-        if (allCheckbox) allCheckbox.checked = false;
-      }
-      applyFilters();
-    });
+  const search = document.getElementById('map-search'); const results = document.getElementById('map-search-results');
+  if (search && results) search.addEventListener('input', () => {
+    results.replaceChildren(); const query = search.value.trim().toLowerCase(); if (!query) { results.hidden = true; return; }
+    markers.filter(item => item.search.toLowerCase().includes(query)).slice(0, 8).forEach(item => { const result = document.createElement('button'); result.type = 'button'; result.className = 'list-group-item list-group-item-action small'; result.textContent = item.name; result.onclick = () => { map.setView(item.marker.getLatLng(), 19); item.marker.openPopup(); results.hidden = true; }; results.appendChild(result); });
+    results.hidden = !results.children.length;
   });
 
-  const locateButton = document.getElementById(options.locateButtonId || 'locate-me');
-  let locationRequestInProgress = false;
-  const locateLabel = locateButton ? locateButton.querySelector('.locate-label') : null;
-  const defaultLocateLabel = locateLabel ? locateLabel.textContent : 'Detect My Location';
-
-  const distanceBetween = function(firstLat, firstLng, secondLat, secondLng) {
-    const earthRadius = 6371;
-    const toRadians = function(value) { return value * Math.PI / 180; };
-    const latDelta = toRadians(secondLat - firstLat);
-    const lngDelta = toRadians(secondLng - firstLng);
-    const a = Math.sin(latDelta / 2) ** 2
-      + Math.cos(toRadians(firstLat)) * Math.cos(toRadians(secondLat)) * Math.sin(lngDelta / 2) ** 2;
-    return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-
-  const setLocateLoading = function(isLoading) {
-    if (!locateButton) return;
-    locateButton.disabled = isLoading;
-    locateButton.setAttribute('aria-busy', String(isLoading));
-    if (locateLabel) locateLabel.textContent = isLoading ? 'Detecting location...' : defaultLocateLabel;
-  };
-
-  const locationErrorMessage = function(error) {
-    if (!error || typeof error.code !== 'number') {
-      return 'Your location could not be detected. Please check your GPS/location services.';
-    }
-    if (error.code === 1) return 'Location permission was denied. Please allow location access from your browser settings.';
-    if (error.code === 2) return 'Your location could not be detected. Please check your GPS/location services.';
-    if (error.code === 3) return 'Location detection timed out. Please try again.';
-    return 'Your location could not be detected. Please check your GPS/location services.';
-  };
-
-  const detectLocation = function() {
-    if (!locateButton || locationRequestInProgress) return;
-    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      setStatus('Location detection requires an HTTPS connection.', 'danger');
-      return;
-    }
-    if (!navigator.geolocation) {
-      locateButton.disabled = true;
-      setStatus('Location detection is not supported by this browser.', 'danger');
-      return;
-    }
-
-    locationRequestInProgress = true;
-    setLocateLoading(true);
-    setStatus('Detecting your location...', 'primary');
-    navigator.geolocation.getCurrentPosition(function(position) {
-      const coords = position && position.coords;
-      const latitude = coords && Number(coords.latitude);
-      const longitude = coords && Number(coords.longitude);
-      const accuracy = coords && Number(coords.accuracy);
-      const validCoordinates = Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
-        && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
-        && Number.isFinite(accuracy) && accuracy > 0;
-
-      if (!validCoordinates) {
-        setStatus('Your location could not be detected. Please check your GPS/location services.', 'danger');
-        locationRequestInProgress = false;
-        setLocateLoading(false);
-        return;
-      }
-
-      const latLng = [latitude, longitude];
-      if (userMarker) map.removeLayer(userMarker);
-      if (userAccuracy) map.removeLayer(userAccuracy);
-      userAccuracy = L.circle(latLng, {
-        radius: accuracy,
-        color: '#2563eb',
-        fillColor: '#2563eb',
-        fillOpacity: 0.1,
-        weight: 1
-      }).addTo(map);
-      userMarker = L.circleMarker(latLng, {
-        radius: 8,
-        color: '#ffffff',
-        weight: 3,
-        fillColor: '#2563eb',
-        fillOpacity: 1
-      }).addTo(map).bindPopup(`Your current location (accuracy: ${Math.round(accuracy)} m)`);
-      map.setView(latLng, Math.max(map.getZoom(), 16));
-
-      const distance = distanceBetween(latitude, longitude, initialLat, initialLng);
-      if (accuracy > 1000) {
-        setStatus(`Your location was detected, but accuracy is low. Please enable GPS and try again. Distance to station: ${distance.toFixed(2)} km.`, 'warning');
-      } else {
-        setStatus(`Location detected (accuracy: ${Math.round(accuracy)} m). Distance to station: ${distance.toFixed(2)} km.`, 'success');
-      }
-      locationRequestInProgress = false;
-      setLocateLoading(false);
-    }, function(error) {
-      setStatus(locationErrorMessage(error), 'danger');
-      locationRequestInProgress = false;
-      setLocateLoading(false);
-    }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
-  };
-
-  if (locateButton) {
-    locateButton.addEventListener('click', detectLocation);
-    if (!navigator.geolocation) {
-      locateButton.disabled = true;
-      setStatus('Location detection is not supported by this browser.', 'danger');
-    }
-  }
-
-  const refresh = function() {
+  const locate = document.getElementById(options.locateButtonId || 'locate-me');
+  if (locate) locate.addEventListener('click', () => {
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) { setStatus('Location detection requires an HTTPS connection.', 'danger'); return; }
+    if (!navigator.geolocation) { setStatus('Location detection is not supported by this browser.', 'danger'); return; }
+    locate.disabled = true; setStatus('Detecting your location...', 'primary');
+    navigator.geolocation.getCurrentPosition(position => {
+      const point = coordinates(position.coords.latitude, position.coords.longitude); const accuracy = Number(position.coords.accuracy);
+      if (!point || !Number.isFinite(accuracy) || accuracy <= 0) { setStatus('GPS returned invalid coordinates.', 'danger'); locate.disabled = false; return; }
+      userPosition = point; if (userMarker) map.removeLayer(userMarker); if (accuracyCircle) map.removeLayer(accuracyCircle);
+      accuracyCircle = L.circle(point, { radius: accuracy, color: '#2563eb', fillColor: '#2563eb', fillOpacity: .1 }).addTo(map);
+      userMarker = L.circleMarker(point, { radius: 8, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }).addTo(map).bindPopup(`📍 Your Location<br>Accuracy: ${Math.round(accuracy)} m`);
+      renderLayers(facilitiesData, platformsData); setStatus(`Location detected. Distance to station: ${distanceText(distanceKm(point, stationPosition))}.`, 'success'); locate.disabled = false;
+    }, error => { setStatus({ 1: 'GPS permission denied.', 2: 'GPS unavailable.', 3: 'GPS detection timed out.' }[error.code] || 'Unable to detect GPS location.', 'danger'); locate.disabled = false; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  });
+  const nearest = document.getElementById('find-nearest');
+  if (nearest) nearest.addEventListener('click', () => {
+    if (!userPosition) { setStatus('Enable location before finding the nearest facility.', 'warning'); return; }
+    const type = document.getElementById('nearest-type')?.value; const matches = markers.filter(item => item.type === type);
+    if (!matches.length) { setStatus('No verified location is available for that facility type.', 'warning'); return; }
+    const item = matches.sort((a, b) => distanceKm(userPosition, a.marker.getLatLng()) - distanceKm(userPosition, b.marker.getLatLng()))[0]; map.setView(item.marker.getLatLng(), 19); item.marker.openPopup(); setStatus(`Nearest ${item.name}: ${distanceText(distanceKm(userPosition, item.marker.getLatLng()))}.`, 'success');
+  });
+  const refresh = () => {
     if (!options.dataUrl) return;
-    fetch(options.dataUrl, {headers: {'Accept': 'application/json'}})
-      .then(function(response) { if (!response.ok) throw new Error('Map data unavailable'); return response.json(); })
-      .then(function(data) {
-        renderLayers(data.facilities || [], data.platforms || []);
-        setStatus(`Live data updated at ${new Date().toLocaleTimeString()}.`, 'success');
-      })
-      .catch(function() { setStatus('Showing last available map data.', 'warning'); });
+    fetch(options.dataUrl, { headers: { Accept: 'application/json' } }).then(response => { if (!response.ok) throw new Error(`Map API returned HTTP ${response.status}`); return response.json(); }).then(data => { if (!data || !Array.isArray(data.facilities) || !Array.isArray(data.platforms)) throw new Error('Map API returned malformed data'); facilitiesData = data.facilities; platformsData = data.platforms; renderLayers(facilitiesData, platformsData); setStatus(`Live data connected. Last updated: ${new Date().toLocaleTimeString()}.`, 'success'); }).catch(error => { console.error('RailSaathi map refresh failed:', error); setStatus(`Unable to load live map data: ${error.message}`, 'danger'); });
   };
-  refresh();
-  if (options.dataUrl) window.setInterval(refresh, 30000);
-
-  window.setTimeout(function() { map.invalidateSize(); }, 100);
-
+  refresh(); if (options.dataUrl) window.setInterval(refresh, 30000); window.setTimeout(() => map.invalidateSize(), 100);
   return map;
 }

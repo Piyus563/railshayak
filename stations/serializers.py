@@ -13,6 +13,11 @@ class FacilitySerializer(serializers.ModelSerializer):
             'contact_number', 'icon'
         ]
 
+    def validate(self, attrs):
+        if (attrs.get('latitude') is None) != (attrs.get('longitude') is None):
+            raise serializers.ValidationError('Latitude and longitude must both be provided or both be empty.')
+        return attrs
+
 
 class PlatformSerializer(serializers.ModelSerializer):
     facilities = FacilitySerializer(many=True, read_only=True)
@@ -23,6 +28,11 @@ class PlatformSerializer(serializers.ModelSerializer):
             'id', 'station', 'number', 'description', 'has_lift', 'has_escalator',
             'has_wheelchair_ramp', 'latitude', 'longitude', 'facilities'
         ]
+
+    def validate(self, attrs):
+        if (attrs.get('latitude') is None) != (attrs.get('longitude') is None):
+            raise serializers.ValidationError('Latitude and longitude must both be provided or both be empty.')
+        return attrs
 
 
 class StationSerializer(serializers.ModelSerializer):

@@ -1,5 +1,7 @@
 from django.db import models
 
+from .validators import validate_coordinate_pair, validate_latitude, validate_longitude
+
 
 class Station(models.Model):
     name = models.CharField(max_length=150, help_text="Station Full Name (e.g. New Jalpaiguri Junction)")
@@ -7,8 +9,8 @@ class Station(models.Model):
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     number_of_platforms = models.PositiveIntegerField(default=5)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, default=26.6853)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, default=88.4418)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_latitude], help_text="Verified latitude (-90 to 90).")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, validators=[validate_longitude], help_text="Verified longitude (-180 to 180).")
     image = models.ImageField(upload_to='stations/', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -19,6 +21,9 @@ class Station(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})"
 
+    def clean(self):
+        validate_coordinate_pair(self.latitude, self.longitude)
+
 
 class Platform(models.Model):
     station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='platforms')
@@ -27,8 +32,8 @@ class Platform(models.Model):
     has_lift = models.BooleanField(default=True)
     has_escalator = models.BooleanField(default=True)
     has_wheelchair_ramp = models.BooleanField(default=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, validators=[validate_latitude], help_text="Verified latitude; leave blank when unknown.")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, validators=[validate_longitude], help_text="Verified longitude; leave blank when unknown.")
 
     class Meta:
         ordering = ['station', 'number']
@@ -36,6 +41,9 @@ class Platform(models.Model):
 
     def __str__(self):
         return f"{self.station.code} - Platform {self.number}"
+
+    def clean(self):
+        validate_coordinate_pair(self.latitude, self.longitude)
 
 
 class Facility(models.Model):
@@ -51,6 +59,7 @@ class Facility(models.Model):
         ('HELP_DESK', 'ℹ️ Sahayata / Help Desk'),
         ('CLOAK_ROOM', '🛅 Cloak Room & Luggage Locker'),
         ('WHEELCHAIR_POINT', '♿ Wheelchair Pick-up Hub'),
+        ('COOLIE_PICKUP', '🧳 Coolie Pickup Point'),
     ]
 
     station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='facilities')
@@ -58,8 +67,8 @@ class Facility(models.Model):
     facility_type = models.CharField(max_length=30, choices=FACILITY_TYPES)
     name = models.CharField(max_length=150)
     location_description = models.CharField(max_length=255, help_text="e.g. Near FOB 1, Platform 1 Center")
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, default=26.6853)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, default=88.4418)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, validators=[validate_latitude], help_text="Verified latitude; leave blank when unknown.")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, validators=[validate_longitude], help_text="Verified longitude; leave blank when unknown.")
     is_operational = models.BooleanField(default=True)
     contact_number = models.CharField(max_length=20, blank=True)
     icon = models.CharField(max_length=50, default='fa-info-circle')
@@ -71,3 +80,6 @@ class Facility(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.station.code}"
+
+    def clean(self):
+        validate_coordinate_pair(self.latitude, self.longitude)

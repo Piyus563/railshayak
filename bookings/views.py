@@ -158,7 +158,12 @@ def create_payment_view(request, booking_id):
     amount_paise = _amount_in_paise(booking.total_fare)
     if (booking.payment_status == 'PENDING' and booking.razorpay_order_id and
             booking.payment_amount == booking.total_fare):
-        return JsonResponse({'status': 'created', 'order_id': booking.razorpay_order_id, 'amount': amount_paise})
+        return JsonResponse({
+            'status': 'created',
+            'order_id': booking.razorpay_order_id,
+            'amount': amount_paise,
+            'key_id': settings.RAZORPAY_KEY_ID,
+        })
 
     try:
         order = _razorpay_client().order.create({
@@ -173,7 +178,12 @@ def create_payment_view(request, booking_id):
     booking.razorpay_order_id = order['id']
     booking.payment_amount = booking.total_fare
     booking.save(update_fields=['total_fare', 'base_fare', 'extra_bag_fare', 'razorpay_order_id', 'payment_amount', 'updated_at'])
-    return JsonResponse({'status': 'created', 'order_id': order['id'], 'amount': amount_paise})
+    return JsonResponse({
+        'status': 'created',
+        'order_id': order['id'],
+        'amount': amount_paise,
+        'key_id': settings.RAZORPAY_KEY_ID,
+    })
 
 
 @login_required

@@ -138,6 +138,14 @@ Open http://127.0.0.1:8000/. The seed command is idempotent and creates NJP demo
 
 SQLite is the default for local development. To use PostgreSQL, set `DB_ENGINE=postgres` and the `POSTGRES_*` values from `.env.example` before running migrations.
 
+## Twilio WhatsApp notifications
+
+1. In the Twilio Console, rotate any credentials that have been exposed and create a new Auth Token.
+2. Copy `.env.example` to `.env` and set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_WHATSAPP_FROM`.
+3. For local testing, use the Twilio WhatsApp Sandbox sender (`whatsapp:+14155238886`) and have each recipient join the sandbox first. Keep `TWILIO_WHATSAPP_ENABLED=True`.
+
+The application loads `.env` automatically. Booking notifications are sent when a booking is created or its status changes. Never commit `.env` or put real Twilio credentials in `.env.example`.
+
 ## Razorpay TEST MODE payments
 
 Payments use Razorpay Checkout with UPI, QR, cards, and net banking enabled by the gateway. The server creates the order and verifies the Razorpay signature, order, amount, and captured status before a paid booking is sent to the coolie queue. Card numbers, UPI PINs, and other payment credentials are never stored by this application.
